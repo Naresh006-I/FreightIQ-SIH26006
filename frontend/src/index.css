@@ -2,25 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── SAIL Brand Colors ──────────────────────────────────────────── */
+:root {
+  --sail-navy:       #003087;
+  --sail-navy-dark:  #001f5a;
+  --sail-navy-light: #004aad;
+  --sail-gold:       #C8A84B;
+  --sail-gold-light: #e0c06a;
+  --sail-red:        #C0392B;
+  --sail-white:      #ffffff;
+  --sail-offwhite:   #f4f6fb;
+  --sail-gray:       #e8ecf4;
+  --sail-text:       #1a2340;
+  --sail-muted:      #6b7a9e;
+}
+
 body {
-  @apply bg-slate-950 text-slate-100 font-sans;
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--sail-offwhite);
+  color: var(--sail-text);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { @apply bg-slate-900; }
-::-webkit-scrollbar-thumb { @apply bg-slate-600 rounded-full; }
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--sail-gray); }
+::-webkit-scrollbar-thumb { background: var(--sail-navy); border-radius: 4px; }
 
-/* Pulse animation for signal badge */
-@keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+/* ── SAIL card base ─────────────────────────────────────────────── */
+.sail-card {
+  background: white;
+  border: 1px solid #dde3f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,48,135,0.06);
 }
-.pulse-green { animation: pulse-green 2s infinite; }
 
-@keyframes pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
-  50%       { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+/* ── SAIL button ────────────────────────────────────────────────── */
+.sail-btn-primary {
+  background: var(--sail-navy);
+  color: white;
+  font-weight: 600;
+  border-radius: 4px;
+  transition: background 0.2s;
 }
-.pulse-red { animation: pulse-red 2s infinite; }
+.sail-btn-primary:hover { background: var(--sail-navy-light); }
+
+/* ── Section heading style (matches SAIL site) ─────────────────── */
+.sail-section-title {
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--sail-navy);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+}
+
+/* ── Gold underline accent ──────────────────────────────────────── */
+.sail-underline {
+  display: inline-block;
+  border-bottom: 3px solid var(--sail-gold);
+  padding-bottom: 4px;
+}
+
+/* ── Top info bar (like SAIL.co.in) ─────────────────────────────── */
+.sail-topbar {
+  background: white;
+  border-bottom: 1px solid #dde3f0;
+  font-size: 12px;
+  color: #444;
+}
+
+/* ── Main nav bar ────────────────────────────────────────────────── */
+.sail-navbar {
+  background: var(--sail-navy);
+}
+
+/* ── Status badge colors ─────────────────────────────────────────── */
+.badge-green  { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
+.badge-yellow { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+.badge-red    { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
+.badge-blue   { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
+
+/* ── Table styling ───────────────────────────────────────────────── */
+.sail-table th {
+  background: var(--sail-navy);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sail-table td {
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid #eef1f8;
+  color: var(--sail-text);
+}
+.sail-table tr:hover td { background: #f0f4fb; }
+
+/* ── Input styling ───────────────────────────────────────────────── */
+.sail-input {
+  border: 1px solid #c4cde3;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--sail-text);
+  background: white;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.sail-input:focus { border-color: var(--sail-navy); }
+
+/* ── Range slider ────────────────────────────────────────────────── */
+input[type=range] { accent-color: var(--sail-navy); }
+
+/* ── Pulse animation ─────────────────────────────────────────────── */
+@keyframes sail-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.sail-pulse { animation: sail-pulse 2s infinite; }

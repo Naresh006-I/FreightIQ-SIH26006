@@ -1,11 +1,11 @@
-import ForecastCard       from './cards/ForecastCard'
-import SignalCard          from './cards/SignalCard'
-import VesselCard          from './cards/VesselCard'
-import PortCard            from './cards/PortCard'
-import ContractCard        from './cards/ContractCard'
-import RiskCard            from './cards/RiskCard'
-import SavingsCard         from './cards/SavingsCard'
-import SummaryBanner       from './cards/SummaryBanner'
+import ForecastCard   from './cards/ForecastCard'
+import SignalCard     from './cards/SignalCard'
+import VesselCard     from './cards/VesselCard'
+import PortCard       from './cards/PortCard'
+import ContractCard   from './cards/ContractCard'
+import RiskCard       from './cards/RiskCard'
+import SavingsCard    from './cards/SavingsCard'
+import SummaryBanner  from './cards/SummaryBanner'
 
 export default function ResultsPanel({ result }) {
   const {
@@ -17,16 +17,10 @@ export default function ResultsPanel({ result }) {
 
   return (
     <div className="space-y-5">
-      {/* Top summary banner */}
-      <SummaryBanner
-        input={input_summary}
-        signal={market_signal}
-        seasonal={seasonal_context}
-      />
+      <SummaryBanner input={input_summary} signal={market_signal} seasonal={seasonal_context} />
 
-      {/* 2-column grid for main cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ForecastCard data={freight_forecast} input={input_summary} />
+        <ForecastCard data={freight_forecast}           input={input_summary} />
         <SignalCard   data={market_signal} />
         <VesselCard   data={vessel_recommendation} />
         <PortCard     data={port_compatibility} />
@@ -34,10 +28,7 @@ export default function ResultsPanel({ result }) {
         <RiskCard     data={risk_assessment} />
       </div>
 
-      {/* Full-width savings */}
       <SavingsCard data={savings_opportunity} usdInr={economic_snapshot.usd_inr} />
-
-      {/* Economic snapshot footer */}
       <EconFooter econ={economic_snapshot} />
     </div>
   )
@@ -45,20 +36,26 @@ export default function ResultsPanel({ result }) {
 
 function EconFooter({ econ }) {
   const items = [
-    { label: 'USD/INR',     value: econ.usd_inr },
-    { label: 'IIP Growth',  value: `${econ.iip_growth_pct}%` },
-    { label: 'GDP Growth',  value: `${econ.gdp_growth_pct}%` },
-    { label: 'Steel Output',value: `${econ.india_steel_output_mt_month}M MT/mo` },
-    { label: 'Coal Demand', value: `${econ.global_coal_demand_index} idx` },
+    { l:'USD/INR',      v: econ.usd_inr },
+    { l:'IIP Growth',   v:`${econ.iip_growth_pct}%` },
+    { l:'GDP Growth',   v:`${econ.gdp_growth_pct}%` },
+    { l:'Steel Output', v:`${econ.india_steel_output_mt_month}M MT/mo` },
+    { l:'Coal Demand',  v:`${econ.global_coal_demand_index} idx` },
   ]
   return (
-    <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Economic Indicators</p>
+    <div className="sail-card p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="h-px flex-1 bg-sail-gray" />
+        <p className="text-[10px] font-bold text-sail-muted uppercase tracking-widest px-2">
+          Economic Indicators — Government of India
+        </p>
+        <div className="h-px flex-1 bg-sail-gray" />
+      </div>
       <div className="flex flex-wrap gap-x-6 gap-y-2">
         {items.map(i => (
-          <div key={i.label} className="text-xs">
-            <span className="text-slate-500">{i.label}: </span>
-            <span className="text-slate-300 font-medium">{i.value}</span>
+          <div key={i.l} className="text-[12px]">
+            <span className="text-sail-muted">{i.l}: </span>
+            <span className="text-sail-navy font-semibold">{i.v}</span>
           </div>
         ))}
       </div>
