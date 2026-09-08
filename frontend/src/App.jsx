@@ -4,6 +4,7 @@ import InputForm        from './components/InputForm'
 import ResultsPanel     from './components/ResultsPanel'
 import WhatIfStudio     from './components/WhatIfStudio'
 import PortIntelligence from './components/PortIntelligence'
+import SailHero         from './components/SailHero'
 import { apiFetch }     from './config'
 
 const DEFAULT_FORM = {
@@ -36,20 +37,47 @@ export default function App() {
 
         {/* ── Freight Analysis ── */}
         {tab === 'analyze' && (
-          <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr', gap:24, alignItems:'start' }}>
-            <div style={{ position:'sticky', top:88 }}>
-              <InputForm form={form} onChange={setForm} onSubmit={handleAnalyze} loading={loading} />
+          <>
+            <SailHero
+              title="Freight Analysis"
+              subtitle="AI-powered freight forecasting · vessel selection · contract optimization for bulk cargo procurement"
+              badge="SAIL · Ministry of Steel"
+            />
+            <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr', gap:24, alignItems:'start' }}>
+              <div style={{ position:'sticky', top:88 }}>
+                <InputForm form={form} onChange={setForm} onSubmit={handleAnalyze} loading={loading} />
+              </div>
+              <div>
+                {error   && <ErrorBanner msg={error} />}
+                {loading && <LoadingCard />}
+                {result  && !loading && <ResultsPanel result={result} />}
+                {!result && !loading && !error && <WelcomeCard />}
+              </div>
             </div>
-            <div>
-              {error   && <ErrorBanner msg={error} />}
-              {loading && <LoadingCard />}
-              {result  && !loading && <ResultsPanel result={result} />}
-              {!result && !loading && !error && <WelcomeCard />}
-            </div>
-          </div>
+          </>
         )}
 
-        {tab === 'whatif'    && <WhatIfStudio     defaultForm={form} />}
+        {tab === 'whatif' && (
+          <>
+            <SailHero
+              title="What-If Simulation Studio"
+              subtitle="Simulate disruption scenarios — terminal delays, route capacity cuts, demand spikes — and see the cost impact vs your baseline plan"
+              badge="Scenario Analysis"
+            />
+            <WhatIfStudio defaultForm={form} />
+          </>
+        )}
+
+        {tab === 'portintel' && (
+          <>
+            <SailHero
+              title="Port Intelligence"
+              subtitle="AI-powered congestion analysis, weather risk assessment, and smart port switching across all East Coast India procurement ports"
+              badge="Port Analytics"
+            />
+            <PortIntelligence defaultMonth={form.target_month} />
+          </>
+        )}
         {tab === 'portintel' && <PortIntelligence defaultMonth={form.target_month} />}
       </main>
     </div>
