@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiFetch } from '../config'
 
 const COMMODITIES = [
   { id: 'thermal_coal', label: 'Thermal Coal' },
@@ -84,12 +85,10 @@ export default function WhatIfStudio({ defaultForm }) {
   async function runSim() {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/whatif/simulate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      setResult(await apiFetch('/api/whatif/simulate', {
+        method: 'POST',
         body: JSON.stringify({ ...form, ...levers }),
-      })
-      if (!res.ok) throw new Error(`Error ${res.status}`)
-      setResult(await res.json())
+      }))
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }

@@ -4,6 +4,7 @@ import InputForm    from './components/InputForm'
 import ResultsPanel from './components/ResultsPanel'
 import WhatIfStudio from './components/WhatIfStudio'
 import PortIntelligence from './components/PortIntelligence'
+import { apiFetch } from './config'
 
 const DEFAULT_FORM = {
   commodity: 'thermal_coal', quantity_mt: 80000,
@@ -21,12 +22,11 @@ export default function App() {
   async function handleAnalyze(formData) {
     setLoading(true); setError(null); setResult(null)
     try {
-      const res  = await fetch('/api/analyze', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      const data = await apiFetch('/api/analyze', {
+        method: 'POST',
         body: JSON.stringify(formData),
       })
-      if (!res.ok) throw new Error(`Server error ${res.status}`)
-      setResult(await res.json())
+      setResult(data)
     } catch (e) {
       setError(e.message || 'Failed to connect to backend')
     } finally { setLoading(false) }

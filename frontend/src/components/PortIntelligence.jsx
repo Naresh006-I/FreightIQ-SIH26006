@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../config'
 
 const MONTHS = [
   {v:1,l:'Jan'},{v:2,l:'Feb'},{v:3,l:'Mar'},{v:4,l:'Apr'},
@@ -33,23 +34,18 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
 
   async function loadIntel() {
     setIL(true)
-    try {
-      const res = await fetch(`/api/whatif/port-intelligence?month=${month}`)
-      if (!res.ok) throw new Error('Failed')
-      setIntel(await res.json())
-    } catch {}
+    try { setIntel(await apiFetch(`/api/whatif/port-intelligence?month=${month}`)) }
+    catch {}
     finally { setIL(false) }
   }
 
   async function runPortSwitch() {
     setSWL(true); setSwError(null)
     try {
-      const res = await fetch('/api/whatif/port-switch', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
+      setSwResult(await apiFetch('/api/whatif/port-switch', {
+        method: 'POST',
         body: JSON.stringify(swForm),
-      })
-      if (!res.ok) throw new Error(`Error ${res.status}`)
-      setSwResult(await res.json())
+      }))
     } catch (e) { setSwError(e.message) }
     finally { setSWL(false) }
   }
