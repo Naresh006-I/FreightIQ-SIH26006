@@ -1,177 +1,143 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../config'
 
-const MONTHS = [
-  {v:1,l:'January'},{v:2,l:'February'},{v:3,l:'March'},{v:4,l:'April'},
-  {v:5,l:'May'},{v:6,l:'June'},{v:7,l:'July'},{v:8,l:'August'},
-  {v:9,l:'September'},{v:10,l:'October'},{v:11,l:'November'},{v:12,l:'December'},
-]
-const COMMODITIES = ['thermal_coal','coking_coal','iron_ore','limestone','bauxite']
-const ORIGINS     = ['AU','ID','US','MZ','RU']
-const ORIGIN_LBL  = {AU:'Australia',ID:'Indonesia',US:'USA',MZ:'Mozambique',RU:'Russia'}
-const ALL_PORTS   = ['INPRD','INVTZ','INGVP','INGPL','INDMA','INHAL']
-const PORT_LBL    = {INPRD:'Paradip',INVTZ:'Visakhapatnam',INGVP:'Gangavaram',INGPL:'Gopalpur',INDMA:'Dhamra',INHAL:'Haldia'}
+const MONTHS  = [{v:1,l:'January'},{v:2,l:'February'},{v:3,l:'March'},{v:4,l:'April'},{v:5,l:'May'},{v:6,l:'June'},{v:7,l:'July'},{v:8,l:'August'},{v:9,l:'September'},{v:10,l:'October'},{v:11,l:'November'},{v:12,l:'December'}]
+const COMS    = ['thermal_coal','coking_coal','iron_ore','limestone','bauxite']
+const ORIS    = ['AU','ID','US','MZ','RU']
+const ORI_LBL = { AU:'Australia', ID:'Indonesia', US:'USA', MZ:'Mozambique', RU:'Russia' }
+const PORTS   = ['INPRD','INVTZ','INGVP','INGPL','INDMA','INHAL']
+const PORT_LBL= { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia' }
 
-const ALERT_STYLE = {
-  CRITICAL:{ hdr:'bg-red-700',    bg:'bg-red-50    border-red-300',    text:'text-red-700',    badge:'bg-red-700 text-white',     bar:'bg-red-500',    icon:'🚨' },
-  HIGH:    { hdr:'bg-orange-600', bg:'bg-orange-50 border-orange-300', text:'text-orange-700', badge:'bg-orange-500 text-white',   bar:'bg-orange-500', icon:'⚠️' },
-  MEDIUM:  { hdr:'bg-yellow-600', bg:'bg-yellow-50 border-yellow-300', text:'text-yellow-700', badge:'bg-yellow-400 text-white',   bar:'bg-yellow-400', icon:'⚡' },
-  LOW:     { hdr:'bg-green-700',  bg:'bg-green-50  border-green-300',  text:'text-green-700',  badge:'bg-green-600 text-white',    bar:'bg-green-500',  icon:'✅' },
+const AL = {
+  CRITICAL:{ hdrBg:'#b71c1c', cardBg:'#ffebee', border:'#ef9a9a', text:'#b71c1c', bar:'#e53935', icon:'🚨' },
+  HIGH:    { hdrBg:'#bf360c', cardBg:'#fff3e0', border:'#ffcc80', text:'#bf360c', bar:'#ffa726', icon:'⚠️' },
+  MEDIUM:  { hdrBg:'#e65100', cardBg:'#fff8e1', border:'#ffe082', text:'#e65100', bar:'#ffd54f', icon:'⚡' },
+  LOW:     { hdrBg:'#1b5e20', cardBg:'#e8f5e9', border:'#a5d6a7', text:'#1b5e20', bar:'#43a047', icon:'✅' },
 }
 
-function SailSelect({ value, onChange, children, small }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      className={`sail-input ${small ? 'text-[11px] py-1.5' : 'text-[12px]'}`}>
-      {children}
-    </select>
-  )
-}
-function FL({ children }) {
-  return <label className="block text-[10px] font-bold text-sail-navy uppercase tracking-wider mb-1">{children}</label>
+function Lbl({ c }) { return <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>{c}</label> }
+function Sel({ value, onChange, children }) {
+  return <select value={value} onChange={e => onChange(e.target.value)} style={{ width:'100%', border:'1px solid #c4cde3', borderRadius:5, padding:'5px 8px', fontSize:11, color:'#1a2340', background:'white', outline:'none' }}>{children}</select>
 }
 
 export default function PortIntelligence({ defaultMonth = 11 }) {
-  const [month, setMonth]           = useState(defaultMonth)
-  const [intel, setIntel]           = useState(null)
-  const [intelLoading, setIL]       = useState(false)
-  const [swForm, setSwForm]         = useState({
-    commodity:'thermal_coal', quantity_mt:80000,
-    origin_id:'AU', current_port:'INPRD',
-    target_month: defaultMonth, target_year:2026,
-  })
-  const [swResult, setSwResult]     = useState(null)
-  const [swLoading, setSWL]         = useState(false)
-  const [swError,   setSwError]     = useState(null)
+  const [month,     setMonth]     = useState(defaultMonth)
+  const [intel,     setIntel]     = useState(null)
+  const [iLoading,  setIL]        = useState(false)
+  const [swForm,    setSwForm]    = useState({ commodity:'thermal_coal', quantity_mt:80000, origin_id:'AU', current_port:'INPRD', target_month:defaultMonth, target_year:2026 })
+  const [swResult,  setSwResult]  = useState(null)
+  const [swLoading, setSWL]       = useState(false)
+  const [swError,   setSwError]   = useState(null)
 
   useEffect(() => { loadIntel() }, [month])
 
   async function loadIntel() {
     setIL(true)
-    try { setIntel(await apiFetch(`/api/whatif/port-intelligence?month=${month}`)) }
-    catch {}
+    try { setIntel(await apiFetch(`/api/whatif/port-intelligence?month=${month}`)) } catch {}
     finally { setIL(false) }
   }
 
-  async function runPortSwitch() {
+  async function runSwitch() {
     setSWL(true); setSwError(null)
-    try {
-      setSwResult(await apiFetch('/api/whatif/port-switch', {
-        method: 'POST', body: JSON.stringify(swForm),
-      }))
-    } catch (e) { setSwError(e.message) }
+    try { setSwResult(await apiFetch('/api/whatif/port-switch', { method:'POST', body: JSON.stringify(swForm) })) }
+    catch (e) { setSwError(e.message) }
     finally { setSWL(false) }
   }
 
   return (
-    <div className="space-y-8">
+    <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
 
-      {/* ═══ SECTION 1 — AI Port Intelligence ═══ */}
-      <section className="sail-card overflow-hidden">
-        {/* Section header */}
-        <div className="bg-sail-navy px-5 py-4 flex items-center justify-between">
+      {/* ── Section 1: AI Port Intelligence ── */}
+      <div className="card" style={{ overflow:'hidden' }}>
+        <div style={{ background:'#003087', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
-            <h2 className="font-heading font-bold text-white text-[15px] tracking-wide">
+            <div style={{ color:'white', fontWeight:700, fontSize:14, letterSpacing:'0.04em' }}>
               🛰️ AI PORT INTELLIGENCE — EAST COAST INDIA
-            </h2>
-            <p className="text-blue-300 text-[11px] mt-0.5">
-              Automated analysis of congestion, weather risk, and delay costs across all SAIL procurement ports
-            </p>
+            </div>
+            <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11, marginTop:3 }}>
+              Automated congestion · weather risk · delay cost analysis across all SAIL procurement ports
+            </div>
           </div>
-          {/* Month picker */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-blue-300 text-[11px]">Analysis Month:</span>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:'rgba(255,255,255,0.7)', fontSize:11 }}>Month:</span>
             <select value={month} onChange={e => setMonth(Number(e.target.value))}
-              className="bg-white border border-blue-400 text-sail-navy text-[12px] rounded px-3 py-1.5 font-semibold outline-none">
+              style={{ background:'white', border:'1px solid #c4cde3', color:'#003087', fontSize:12, borderRadius:5, padding:'4px 10px', fontWeight:600, outline:'none' }}>
               {MONTHS.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
             </select>
           </div>
         </div>
-        <div className="h-[3px] bg-sail-gold" />
+        <div style={{ height:3, background:'#C8A84B' }} />
 
-        {intelLoading && (
-          <div className="flex items-center justify-center py-16 gap-3 bg-sail-offwhite">
-            <div className="w-8 h-8 border-4 border-sail-gray border-t-sail-navy rounded-full animate-spin" />
-            <p className="text-sail-muted text-[13px]">AI scanning all ports…</p>
+        {iLoading && (
+          <div style={{ padding:48, textAlign:'center' }}>
+            <div style={{ width:36, height:36, border:'4px solid #dde3f4', borderTopColor:'#003087', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
+            <div style={{ color:'#6b7a9e', fontSize:13 }}>AI scanning all ports…</div>
           </div>
         )}
 
-        {intel && !intelLoading && (
-          <div className="p-5 bg-sail-offwhite">
-            {/* Summary row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {intel && !iLoading && (
+          <div style={{ padding:20, background:'#f8f9fd' }}>
+            {/* Summary */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
               {[
-                { icon:'🚨', label:'Highest Risk Port', value: intel.highest_risk_port, color:'text-red-700' },
-                { icon:'🌧️', label:'Monsoon Active',    value: intel.monsoon_active ? 'YES — ACTIVE' : 'NO', color: intel.monsoon_active?'text-blue-700':'text-green-700' },
-                { icon:'💸', label:'Avg Delay Cost',    value: `₹${(intel.avg_delay_cost_inr/1_00_000).toFixed(1)}L / vessel` },
-                { icon:'⚓', label:'Ports Analysed',    value: `${intel.reports.length} East Coast Ports` },
+                { icon:'🚨', label:'Highest Risk Port',  value: intel.highest_risk_port, color:'#b71c1c' },
+                { icon:'🌧️', label:'Monsoon Active',     value: intel.monsoon_active ? 'YES — ACTIVE' : 'NO', color: intel.monsoon_active ? '#0d47a1' : '#1b5e20' },
+                { icon:'💸', label:'Avg Delay Cost',     value:`₹${(intel.avg_delay_cost_inr/1_00_000).toFixed(1)}L/vessel` },
+                { icon:'⚓', label:'Ports Analysed',     value:`${intel.reports.length} Ports` },
               ].map(t => (
-                <div key={t.label} className="bg-white border border-sail-gray rounded p-3">
-                  <p className="text-[10px] text-sail-muted uppercase tracking-wide mb-1">{t.icon} {t.label}</p>
-                  <p className={`text-[13px] font-bold ${t.color || 'text-sail-navy'}`}>{t.value}</p>
+                <div key={t.label} style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7, padding:'12px 14px' }}>
+                  <div style={{ fontSize:10, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>{t.icon} {t.label}</div>
+                  <div style={{ fontSize:14, fontWeight:700, color: t.color || '#003087' }}>{t.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Section divider */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex-1 h-px bg-sail-gray" />
-              <span className="sail-section-title text-[11px]">PORT-WISE ANALYSIS</span>
-              <div className="flex-1 h-px bg-sail-gray" />
-            </div>
-
-            {/* Port cards grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Port cards */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14 }}>
               {intel.reports.map(r => {
-                const s = ALERT_STYLE[r.alert_level] || ALERT_STYLE.LOW
+                const s = AL[r.alert_level] || AL.LOW
                 return (
-                  <div key={r.port_id} className={`rounded border-2 overflow-hidden ${s.bg}`}>
-                    {/* Card header */}
-                    <div className={`${s.hdr} px-3 py-2 flex items-center justify-between`}>
+                  <div key={r.port_id} style={{ background:s.cardBg, border:`2px solid ${s.border}`, borderRadius:9, overflow:'hidden' }}>
+                    <div style={{ background:s.hdrBg, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
-                        <p className="text-white font-bold text-[13px]">{r.port_name}</p>
-                        <p className="text-white/70 text-[10px]">{r.state}</p>
+                        <div style={{ color:'white', fontWeight:700, fontSize:13 }}>{r.port_name}</div>
+                        <div style={{ color:'rgba(255,255,255,0.7)', fontSize:10 }}>{r.state}</div>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded bg-white/20 text-white`}>
+                      <span style={{ background:'rgba(255,255,255,0.2)', color:'white', fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:3 }}>
                         {s.icon} {r.alert_level}
                       </span>
                     </div>
-
-                    <div className="p-3 space-y-2">
-                      {/* 2×3 metrics */}
-                      <div className="grid grid-cols-3 gap-1.5">
+                    <div style={{ padding:12 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:10 }}>
                         {[
-                          { l:'Congestion',   v: r.congestion.level,     c: r.congestion.level==='HIGH'?'text-red-600':r.congestion.level==='MEDIUM'?'text-yellow-600':'text-green-600' },
-                          { l:'Weather',      v: r.weather.level,        c: r.weather.level==='HIGH'||r.weather.level==='CRITICAL'?'text-red-600':r.weather.level==='MEDIUM'?'text-yellow-600':'text-green-600' },
-                          { l:'Max Draft',    v: `${r.max_draft_m}m`,    c: 'text-sail-navy' },
-                          { l:'Vessels Wait', v: r.congestion.vessels_waiting, c:'text-sail-text' },
-                          { l:'Avg Wait',     v: `${r.congestion.avg_wait_days}d`, c: r.congestion.avg_wait_days>4?'text-red-600':'text-sail-text' },
-                          { l:'Delay Cost',   v: `₹${(r.delay_cost_inr/1_00_000).toFixed(1)}L`, c:'text-orange-600' },
+                          { l:'Congestion',    v:r.congestion.level,   c: r.congestion.level==='HIGH'?'#b71c1c':r.congestion.level==='MEDIUM'?'#e65100':'#1b5e20' },
+                          { l:'Weather',       v:r.weather.level,      c: r.weather.level==='HIGH'||r.weather.level==='CRITICAL'?'#b71c1c':r.weather.level==='MEDIUM'?'#e65100':'#1b5e20' },
+                          { l:'Max Draft',     v:`${r.max_draft_m}m`,  c:'#003087' },
+                          { l:'Vessels Wait',  v:r.congestion.vessels_waiting, c:'#1a2340' },
+                          { l:'Avg Wait',      v:`${r.congestion.avg_wait_days}d`, c: r.congestion.avg_wait_days>4?'#b71c1c':'#1a2340' },
+                          { l:'Delay Cost',    v:`₹${(r.delay_cost_inr/1_00_000).toFixed(1)}L`, c:'#e65100' },
                         ].map(m => (
-                          <div key={m.l} className="bg-white/60 rounded p-1.5 text-center">
-                            <p className="text-[9px] text-sail-muted">{m.l}</p>
-                            <p className={`text-[11px] font-bold ${m.c}`}>{m.v}</p>
+                          <div key={m.l} style={{ background:'rgba(255,255,255,0.65)', borderRadius:5, padding:'6px', textAlign:'center' }}>
+                            <div style={{ fontSize:9, color:'#6b7a9e', marginBottom:2 }}>{m.l}</div>
+                            <div style={{ fontSize:11, fontWeight:700, color:m.c }}>{m.v}</div>
                           </div>
                         ))}
                       </div>
-
-                      {/* Berth efficiency bar */}
-                      <div>
-                        <div className="flex justify-between text-[10px] mb-0.5">
-                          <span className="text-sail-muted">Berth Efficiency</span>
-                          <span className="text-sail-text font-semibold">{r.berth_efficiency_pct}%</span>
+                      {/* Berth bar */}
+                      <div style={{ marginBottom:8 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, marginBottom:3 }}>
+                          <span style={{ color:'#6b7a9e' }}>Berth Efficiency</span>
+                          <span style={{ fontWeight:600, color:'#1a2340' }}>{r.berth_efficiency_pct}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className={`h-1.5 rounded-full ${s.bar}`} style={{width:`${r.berth_efficiency_pct}%`}} />
+                        <div style={{ background:'rgba(0,0,0,0.1)', borderRadius:3, height:5, overflow:'hidden' }}>
+                          <div style={{ height:5, background:s.bar, borderRadius:3, width:`${r.berth_efficiency_pct}%` }} />
                         </div>
                       </div>
-
-                      {/* AI insight */}
-                      <p className={`text-[11px] leading-relaxed font-medium ${s.text}`}>💡 {r.ai_insight}</p>
+                      <div style={{ fontSize:11, color:s.text, fontWeight:500, lineHeight:1.55 }}>💡 {r.ai_insight}</div>
                       {r.silting_risk && (
-                        <p className="text-[10px] text-orange-700 bg-orange-50 rounded px-2 py-1 border border-orange-200">
-                          ⚠ River silting risk — confirm tidal window before berthing
-                        </p>
+                        <div style={{ fontSize:10, color:'#e65100', background:'rgba(255,255,255,0.7)', border:'1px solid #ffcc80', borderRadius:4, padding:'4px 8px', marginTop:6 }}>
+                          ⚠ River silting risk — confirm tidal window
+                        </div>
                       )}
                     </div>
                   </div>
@@ -180,147 +146,113 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
             </div>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* ═══ SECTION 2 — Smart Port Switcher ═══ */}
-      <section className="sail-card overflow-hidden">
-        <div className="bg-sail-navy px-5 py-4">
-          <h2 className="font-heading font-bold text-white text-[15px] tracking-wide">
+      {/* ── Section 2: Smart Port Switcher ── */}
+      <div className="card" style={{ overflow:'hidden' }}>
+        <div style={{ background:'#003087', padding:'14px 20px' }}>
+          <div style={{ color:'white', fontWeight:700, fontSize:14, letterSpacing:'0.04em' }}>
             🔄 SMART PORT SWITCHER — AI COST COMPARISON
-          </h2>
-          <p className="text-blue-300 text-[11px] mt-0.5">
+          </div>
+          <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11, marginTop:3 }}>
             AI ranks all compatible East Coast ports by total landed cost and recommends the optimal destination
-          </p>
-        </div>
-        <div className="h-[3px] bg-sail-gold" />
-
-        <div className="p-5 bg-sail-offwhite">
-          <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
-
-            {/* Form */}
-            <div className="bg-white border border-sail-gray rounded p-4 space-y-3">
-              <p className="text-[11px] font-bold text-sail-navy uppercase tracking-widest border-b border-sail-gray pb-2">
-                Shipment Parameters
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div><FL>Commodity</FL>
-                  <SailSelect value={swForm.commodity} onChange={v=>setSwForm(p=>({...p,commodity:v}))} small>
-                    {COMMODITIES.map(c=><option key={c} value={c}>{c.replace('_',' ')}</option>)}
-                  </SailSelect>
-                </div>
-                <div><FL>Qty (MT)</FL>
-                  <input type="number" value={swForm.quantity_mt} min={10000} max={500000} step={5000}
-                    onChange={e=>setSwForm(p=>({...p,quantity_mt:Number(e.target.value)}))}
-                    className="sail-input text-[11px]" />
-                </div>
-                <div><FL>Origin</FL>
-                  <SailSelect value={swForm.origin_id} onChange={v=>setSwForm(p=>({...p,origin_id:v}))} small>
-                    {ORIGINS.map(o=><option key={o} value={o}>{ORIGIN_LBL[o]}</option>)}
-                  </SailSelect>
-                </div>
-                <div><FL>Current Port</FL>
-                  <SailSelect value={swForm.current_port} onChange={v=>setSwForm(p=>({...p,current_port:v}))} small>
-                    {ALL_PORTS.map(p=><option key={p} value={p}>{PORT_LBL[p]}</option>)}
-                  </SailSelect>
-                </div>
-              </div>
-              <button onClick={runPortSwitch} disabled={swLoading}
-                className="w-full sail-btn-primary py-2.5 flex items-center justify-center gap-2 text-[12px] disabled:opacity-50">
-                {swLoading
-                  ? <><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Analysing…</>
-                  : <><span className="text-sail-gold">▶</span> Analyse Alternate Ports</>}
-              </button>
-              {swError && <p className="text-[11px] text-red-600">⚠ {swError}</p>}
-            </div>
-
-            {/* Results */}
-            {swResult ? (
-              <div className="space-y-4">
-                {/* AI verdict */}
-                <div className={`rounded border-2 p-4 ${swResult.best_port.port_id !== swResult.current_port.port_id
-                  ? 'bg-blue-50 border-sail-navy' : 'bg-green-50 border-green-400'}`}>
-                  <p className="text-[10px] font-bold text-sail-navy uppercase tracking-widest mb-1">AI Verdict</p>
-                  <p className="text-[13px] text-sail-text leading-relaxed">{swResult.ai_recommendation}</p>
-                  {swResult.saving_vs_current_inr > 0 && (
-                    <p className="text-green-700 font-black text-xl mt-2">
-                      ₹{(swResult.saving_vs_current_inr/1_00_000).toFixed(1)} Lakhs savings identified
-                    </p>
-                  )}
-                </div>
-
-                {/* Comparison table */}
-                <div className="bg-white border border-sail-gray rounded overflow-hidden">
-                  <div className="bg-sail-navy px-4 py-2">
-                    <p className="text-white text-[11px] font-bold uppercase tracking-widest">Port Cost Comparison — All Compatible Ports</p>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full sail-table">
-                      <thead>
-                        <tr>
-                          {['Rank','Port','State','Congestion','Avg Wait','Freight Rate','Total Cost','Saving vs Current'].map(h=>(
-                            <th key={h} className="text-left">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {swResult.all_ports.map(p => {
-                          const saving  = swResult.current_port.total_cost_inr - p.total_cost_inr
-                          const isBest  = p.rank === 1
-                          const isCurr  = p.is_current
-                          return (
-                            <tr key={p.port_id} className={isBest ? 'bg-blue-50' : isCurr ? 'bg-yellow-50' : ''}>
-                              <td>
-                                <span className={`font-black text-[13px] ${isBest?'text-sail-navy':'text-sail-muted'}`}>
-                                  #{p.rank}
-                                </span>
-                              </td>
-                              <td>
-                                <span className="font-bold text-sail-navy">{p.port_name}</span>
-                                {isCurr && <span className="ml-1 text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-300">current</span>}
-                                {isBest && <span className="ml-1 text-[10px] bg-blue-100 text-sail-navy px-1.5 py-0.5 rounded border border-blue-300">★ optimal</span>}
-                              </td>
-                              <td className="text-sail-muted">{p.state}</td>
-                              <td>
-                                <span className={`font-semibold ${p.congestion_level==='HIGH'?'text-red-600':p.congestion_level==='MEDIUM'?'text-yellow-600':'text-green-600'}`}>
-                                  {p.congestion_level}
-                                </span>
-                              </td>
-                              <td>{p.avg_wait_days}d</td>
-                              <td className="font-semibold text-sail-navy">${p.freight_rate}/MT</td>
-                              <td className="font-bold text-sail-navy">₹{(p.total_cost_inr/1_00_000).toFixed(1)}L</td>
-                              <td>
-                                {saving > 0
-                                  ? <span className="text-green-700 font-bold">₹{(saving/1_00_000).toFixed(1)}L</span>
-                                  : saving === 0
-                                  ? <span className="text-sail-muted">—</span>
-                                  : <span className="text-red-600 font-bold">₹{(Math.abs(saving)/1_00_000).toFixed(1)}L more</span>}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              !swLoading && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 bg-sail-navy rounded flex items-center justify-center mb-3">
-                    <span className="text-sail-gold font-black">⚓</span>
-                  </div>
-                  <p className="text-sail-muted text-[13px]">Configure shipment parameters and click Analyse to compare all ports</p>
-                </div>
-              )
-            )}
-            {swLoading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="w-8 h-8 border-4 border-sail-gray border-t-sail-navy rounded-full animate-spin" />
-              </div>
-            )}
           </div>
         </div>
-      </section>
+        <div style={{ height:3, background:'#C8A84B' }} />
+        <div style={{ padding:20, background:'#f8f9fd', display:'grid', gridTemplateColumns:'320px 1fr', gap:20, alignItems:'start' }}>
+
+          {/* Form */}
+          <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:8, padding:16, display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase', letterSpacing:'0.08em', borderBottom:'1px solid #eef1fa', paddingBottom:8 }}>
+              Shipment Parameters
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+              <div><Lbl c="Commodity" /><Sel value={swForm.commodity} onChange={v=>setSwForm(p=>({...p,commodity:v}))}>{COMS.map(c=><option key={c} value={c}>{c.replace('_',' ')}</option>)}</Sel></div>
+              <div><Lbl c="Qty (MT)" /><input type="number" value={swForm.quantity_mt} min={10000} max={500000} step={5000} onChange={e=>setSwForm(p=>({...p,quantity_mt:Number(e.target.value)}))} style={{ width:'100%', border:'1px solid #c4cde3', borderRadius:5, padding:'5px 8px', fontSize:11, outline:'none' }} /></div>
+              <div><Lbl c="Origin" /><Sel value={swForm.origin_id} onChange={v=>setSwForm(p=>({...p,origin_id:v}))}>{ORIS.map(o=><option key={o} value={o}>{ORI_LBL[o]}</option>)}</Sel></div>
+              <div><Lbl c="Current Port" /><Sel value={swForm.current_port} onChange={v=>setSwForm(p=>({...p,current_port:v}))}>{PORTS.map(p=><option key={p} value={p}>{PORT_LBL[p]}</option>)}</Sel></div>
+            </div>
+            <button onClick={runSwitch} disabled={swLoading}
+              style={{ background: swLoading ? '#9aafd4' : '#003087', color:'white', fontWeight:700, fontSize:12, borderRadius:5, padding:'9px 0', border:'none', cursor: swLoading?'not-allowed':'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              {swLoading
+                ? <><span style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block' }} /> Analysing…</>
+                : <><span style={{ color:'#C8A84B' }}>▶</span> Analyse Alternate Ports</>}
+            </button>
+            {swError && <div style={{ fontSize:11, color:'#b71c1c' }}>⚠ {swError}</div>}
+          </div>
+
+          {/* Results */}
+          {swResult ? (
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {/* Verdict */}
+              <div style={{ background: swResult.best_port.port_id !== swResult.current_port.port_id ? '#e3f2fd' : '#e8f5e9',
+                            border:`1px solid ${swResult.best_port.port_id !== swResult.current_port.port_id ? '#90caf9' : '#a5d6a7'}`,
+                            borderRadius:7, padding:'14px 16px' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>AI Verdict</div>
+                <div style={{ fontSize:13, color:'#1a2340', lineHeight:1.65 }}>{swResult.ai_recommendation}</div>
+                {swResult.saving_vs_current_inr > 0 && (
+                  <div style={{ fontSize:20, fontWeight:900, color:'#1b5e20', marginTop:8 }}>
+                    ₹{(swResult.saving_vs_current_inr/1_00_000).toFixed(1)} Lakhs savings identified
+                  </div>
+                )}
+              </div>
+
+              {/* Table */}
+              <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:8, overflow:'hidden' }}>
+                <div style={{ background:'#003087', padding:'8px 14px' }}>
+                  <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                    Port Cost Comparison — All Compatible Ports
+                  </span>
+                </div>
+                <div style={{ overflowX:'auto' }}>
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                    <thead>
+                      <tr>
+                        {['Rank','Port','Congestion','Wait','Freight','Total Cost','Saving'].map(h => (
+                          <th key={h} style={{ background:'#003087', color:'white', padding:'8px 12px', textAlign:'left', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {swResult.all_ports.map(p => {
+                        const saving = swResult.current_port.total_cost_inr - p.total_cost_inr
+                        return (
+                          <tr key={p.port_id} style={{ background: p.rank===1 ? '#eff6ff' : p.is_current ? '#fffbeb' : 'white' }}>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', fontWeight:800, color: p.rank===1 ? '#003087' : '#6b7a9e' }}>#{p.rank}</td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa' }}>
+                              <span style={{ fontWeight:700, color:'#003087' }}>{p.port_name}</span>
+                              {p.is_current && <span style={{ marginLeft:6, fontSize:10, background:'#fff8e1', color:'#e65100', border:'1px solid #ffe082', padding:'1px 6px', borderRadius:3 }}>current</span>}
+                              {p.rank===1  && <span style={{ marginLeft:6, fontSize:10, background:'#e3f2fd', color:'#0d47a1', border:'1px solid #90caf9', padding:'1px 6px', borderRadius:3 }}>★ optimal</span>}
+                            </td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', fontWeight:700, color: p.congestion_level==='HIGH'?'#b71c1c':p.congestion_level==='MEDIUM'?'#e65100':'#1b5e20' }}>{p.congestion_level}</td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', color:'#6b7a9e' }}>{p.avg_wait_days}d</td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', fontWeight:600, color:'#1a2340' }}>${p.freight_rate}/MT</td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', fontWeight:700, color:'#003087' }}>₹{(p.total_cost_inr/1_00_000).toFixed(1)}L</td>
+                            <td style={{ padding:'9px 12px', borderBottom:'1px solid #eef1fa', fontWeight:700, color: saving>0?'#1b5e20':saving<0?'#b71c1c':'#6b7a9e' }}>
+                              {saving > 0 ? `₹${(saving/1_00_000).toFixed(1)}L` : saving < 0 ? `₹${(Math.abs(saving)/1_00_000).toFixed(1)}L more` : '—'}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          ) : (
+            !swLoading && (
+              <div style={{ textAlign:'center', padding:'48px 20px', color:'#6b7a9e', fontSize:13 }}>
+                Configure parameters and click Analyse to compare all ports
+              </div>
+            )
+          )}
+          {swLoading && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:48 }}>
+              <div style={{ width:32, height:32, border:'4px solid #dde3f4', borderTopColor:'#003087', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

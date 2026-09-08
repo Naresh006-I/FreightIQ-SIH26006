@@ -1,69 +1,63 @@
-function CardHeader({ icon, title }) {
-  return (
-    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2 bg-sail-navy">
-      <span>{icon}</span>
-      <h3 className="text-[12px] font-bold text-white uppercase tracking-widest">{title}</h3>
-    </div>
-  )
-}
-
 export default function ContractCard({ data }) {
   const { recommended_type, recommended_rate, recommended_cost_usd, saving_vs_spot_usd, rationale, options } = data
   return (
-    <div className="sail-card overflow-hidden">
-      <CardHeader icon="📄" title="Contract Recommendation" />
-      <div className="p-4">
+    <div className="card" style={{ overflow:'hidden' }}>
+      <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
+        <span>📄</span>
+        <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Contract Recommendation</span>
+      </div>
+      <div style={{ padding:16 }}>
 
         {/* Recommended */}
-        <div className="bg-sail-navy rounded p-3 mb-4">
-          <p className="text-[10px] text-blue-300 uppercase tracking-widest font-semibold">SAIL Recommended</p>
-          <p className="text-xl font-black text-white mt-0.5">{recommended_type}</p>
-          <p className="text-blue-200 text-[12px] mt-0.5">
-            ${recommended_rate}/MT &nbsp;·&nbsp; Total ${(recommended_cost_usd/1_000_000).toFixed(2)}M
-          </p>
+        <div style={{ background:'#003087', borderRadius:7, padding:'12px 14px', marginBottom:14 }}>
+          <div style={{ color:'rgba(255,255,255,0.6)', fontSize:10, textTransform:'uppercase', letterSpacing:'0.08em' }}>SAIL Recommended</div>
+          <div style={{ color:'white', fontWeight:900, fontSize:18, marginTop:3 }}>{recommended_type}</div>
+          <div style={{ color:'rgba(255,255,255,0.7)', fontSize:12, marginTop:3 }}>
+            ${recommended_rate}/MT &nbsp;·&nbsp; Total ${(recommended_cost_usd / 1_000_000).toFixed(2)}M
+          </div>
         </div>
 
-        {/* Options table */}
-        <div className="border border-sail-gray rounded overflow-hidden mb-3">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="bg-sail-offwhite">
-                <th className="text-left px-3 py-2 text-sail-muted font-semibold">Contract Type</th>
-                <th className="text-right px-3 py-2 text-sail-muted font-semibold">Rate</th>
-                <th className="text-right px-3 py-2 text-sail-muted font-semibold">Discount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {options.map((opt, i) => {
-                const isRec = opt.type === recommended_type
-                return (
-                  <tr key={i} className={`border-t border-sail-gray ${isRec ? 'bg-blue-50' : ''}`}>
-                    <td className={`px-3 py-2 font-medium ${isRec ? 'text-sail-navy font-bold' : 'text-sail-text'}`}>
-                      {isRec && <span className="text-sail-gold mr-1">★</span>}
-                      {opt.type}
-                    </td>
-                    <td className="px-3 py-2 text-right font-semibold text-sail-text">${opt.rate}/MT</td>
-                    <td className="px-3 py-2 text-right">
-                      {opt.discount_pct > 0
-                        ? <span className="text-green-600 font-bold">-{opt.discount_pct}%</span>
-                        : <span className="text-sail-muted">—</span>}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        {/* Options */}
+        <div style={{ border:'1px solid #dde3f4', borderRadius:6, overflow:'hidden', marginBottom:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr auto auto',
+                        background:'#f5f7fc', padding:'7px 12px', borderBottom:'1px solid #dde3f4' }}>
+            {['Contract Type','Rate','Discount'].map(h => (
+              <span key={h} style={{ fontSize:10, fontWeight:700, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</span>
+            ))}
+          </div>
+          {options.map((opt, i) => {
+            const isRec = opt.type === recommended_type
+            return (
+              <div key={i} style={{
+                display:'grid', gridTemplateColumns:'1fr auto auto',
+                padding:'9px 12px', alignItems:'center',
+                borderBottom: i < options.length - 1 ? '1px solid #eef1fa' : 'none',
+                background: isRec ? '#eff6ff' : 'white',
+              }}>
+                <span style={{ fontSize:12, fontWeight: isRec ? 700 : 500, color: isRec ? '#003087' : '#1a2340' }}>
+                  {isRec && <span style={{ color:'#C8A84B', marginRight:5 }}>★</span>}
+                  {opt.type}
+                </span>
+                <span style={{ fontSize:12, fontWeight:700, color:'#1a2340', marginRight:24 }}>${opt.rate}/MT</span>
+                <span style={{ fontSize:12, fontWeight:700, color: opt.discount_pct > 0 ? '#1b5e20' : '#6b7a9e' }}>
+                  {opt.discount_pct > 0 ? `-${opt.discount_pct}%` : '—'}
+                </span>
+              </div>
+            )
+          })}
         </div>
 
         {/* Saving */}
         {saving_vs_spot_usd > 0 && (
-          <div className="bg-green-50 border border-green-300 rounded p-2.5 mb-2 flex justify-between items-center">
-            <p className="text-[12px] text-green-700 font-semibold">Saving vs Spot Market</p>
-            <p className="text-[15px] font-black text-green-700">${saving_vs_spot_usd.toLocaleString()}</p>
+          <div style={{ background:'#e8f5e9', border:'1px solid #a5d6a7', borderRadius:6,
+                        padding:'9px 12px', display:'flex', justifyContent:'space-between',
+                        alignItems:'center', marginBottom:10 }}>
+            <span style={{ fontSize:12, color:'#1b5e20', fontWeight:600 }}>Saving vs Spot Market</span>
+            <span style={{ fontSize:15, fontWeight:900, color:'#1b5e20' }}>${saving_vs_spot_usd.toLocaleString()}</span>
           </div>
         )}
 
-        <p className="text-[11px] text-sail-muted leading-relaxed">{rationale}</p>
+        <div style={{ fontSize:11, color:'#6b7a9e', lineHeight:1.65 }}>{rationale}</div>
       </div>
     </div>
   )

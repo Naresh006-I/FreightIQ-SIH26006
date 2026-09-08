@@ -1,50 +1,49 @@
-const COMMODITY_LABELS = {
-  thermal_coal:'Thermal Coal', coking_coal:'Coking Coal',
-  iron_ore:'Iron Ore', limestone:'Limestone', bauxite:'Bauxite',
-}
-const ORIGIN_LABELS = { AU:'Australia', ID:'Indonesia', US:'United States', MZ:'Mozambique', RU:'Russia' }
-const PORT_LABELS   = { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia' }
+const COM_LBL = { thermal_coal:'Thermal Coal', coking_coal:'Coking Coal', iron_ore:'Iron Ore', limestone:'Limestone', bauxite:'Bauxite' }
+const ORI_LBL = { AU:'Australia', ID:'Indonesia', US:'United States', MZ:'Mozambique', RU:'Russia' }
+const PRT_LBL = { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia' }
 
-const SIGNAL_CFG = {
-  'BUY NOW':  { bg:'bg-green-50 border-green-300',  badge:'bg-green-600',  text:'text-green-800' },
-  'WAIT':     { bg:'bg-red-50 border-red-300',      badge:'bg-red-600',    text:'text-red-800'   },
-  'CAUTION':  { bg:'bg-yellow-50 border-yellow-300',badge:'bg-yellow-500', text:'text-yellow-800'},
+const SIG = {
+  'BUY NOW': { bg:'#003087', text:'white', dot:'#22c55e' },
+  'WAIT':    { bg:'#b71c1c', text:'white', dot:'#ef5350' },
+  'CAUTION': { bg:'#e65100', text:'white', dot:'#ffa726' },
 }
 
 export default function SummaryBanner({ input, signal, seasonal }) {
-  const cfg = SIGNAL_CFG[signal.signal] || SIGNAL_CFG['CAUTION']
+  const cfg = SIG[signal.signal] || SIG['CAUTION']
   return (
-    <div className={`sail-card border-2 overflow-hidden ${cfg.bg}`}>
-      {/* Navy top strip */}
-      <div className="bg-sail-navy px-5 py-2 flex items-center justify-between">
-        <span className="text-white text-[11px] font-bold uppercase tracking-widest">
-          Analysis Summary — SAIL Freight Intelligence
+    <div className="card" style={{ overflow:'hidden', marginBottom:20 }}>
+      <div style={{ background:'#003087', padding:'12px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>
+          Analysis Summary — SAIL Freight Intelligence Platform
         </span>
-        <span className="text-sail-gold text-[11px]">SIH26006</span>
+        <span style={{ color:'#C8A84B', fontSize:11 }}>SIH26006</span>
       </div>
+      <div style={{ height:3, background:'#C8A84B' }} />
 
-      <div className="px-5 py-4 flex flex-wrap items-start justify-between gap-4">
+      <div style={{ padding:'16px 20px', display:'flex', flexWrap:'wrap', alignItems:'center',
+                    justifyContent:'space-between', gap:16, background:'#f8f9fd' }}>
         <div>
-          <h2 className="text-xl font-bold text-sail-navy">
-            {input.quantity_mt.toLocaleString()} MT &nbsp;·&nbsp;
-            {COMMODITY_LABELS[input.commodity] || input.commodity}
-          </h2>
-          <p className="text-[13px] text-sail-muted mt-1">
-            <span className="font-semibold text-sail-text">{ORIGIN_LABELS[input.origin_id]}</span>
+          <div style={{ fontSize:20, fontWeight:800, color:'#003087' }}>
+            {input.quantity_mt.toLocaleString()} MT &nbsp;·&nbsp; {COM_LBL[input.commodity] || input.commodity}
+          </div>
+          <div style={{ fontSize:13, color:'#6b7a9e', marginTop:5 }}>
+            <strong style={{ color:'#1a2340' }}>{ORI_LBL[input.origin_id]}</strong>
             &nbsp;→&nbsp;
-            <span className="font-semibold text-sail-text">{PORT_LABELS[input.port_id]}</span>
-            &nbsp;·&nbsp;{input.period}
-            &nbsp;·&nbsp;{input.contract_months}-month contract
-            &nbsp;·&nbsp;{input.route_distance_nm.toLocaleString()} NM
-          </p>
-          <div className="flex flex-wrap gap-2 mt-2">
+            <strong style={{ color:'#1a2340' }}>{PRT_LBL[input.port_id]}</strong>
+            &nbsp;·&nbsp; {input.period}
+            &nbsp;·&nbsp; {input.contract_months}-month contract
+            &nbsp;·&nbsp; {input.route_distance_nm.toLocaleString()} NM
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:10 }}>
             {seasonal.peak_demand && (
-              <span className="text-[11px] bg-orange-100 text-orange-700 border border-orange-300 px-2 py-0.5 rounded font-semibold">
+              <span style={{ fontSize:11, background:'#fff3e0', color:'#e65100',
+                              border:'1px solid #ffcc80', padding:'3px 10px', borderRadius:20, fontWeight:600 }}>
                 📈 Post-Monsoon Demand Peak
               </span>
             )}
             {seasonal.monsoon && (
-              <span className="text-[11px] bg-blue-100 text-blue-700 border border-blue-300 px-2 py-0.5 rounded font-semibold">
+              <span style={{ fontSize:11, background:'#e3f2fd', color:'#0d47a1',
+                              border:'1px solid #90caf9', padding:'3px 10px', borderRadius:20, fontWeight:600 }}>
                 🌧️ Monsoon Season Active
               </span>
             )}
@@ -52,9 +51,12 @@ export default function SummaryBanner({ input, signal, seasonal }) {
         </div>
 
         {/* Signal badge */}
-        <div className={`${cfg.badge} rounded px-6 py-3 text-center min-w-[120px]`}>
-          <p className="text-white font-black text-lg tracking-wide">{signal.signal}</p>
-          <p className="text-white/80 text-[11px] mt-0.5">{signal.confidence}% confidence</p>
+        <div style={{ background:cfg.bg, borderRadius:8, padding:'14px 28px', textAlign:'center', minWidth:130 }}>
+          <div style={{ color:cfg.text, fontWeight:900, fontSize:18, letterSpacing:'0.05em' }}>{signal.signal}</div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, marginTop:5 }}>
+            <span style={{ width:7, height:7, borderRadius:'50%', background:cfg.dot, display:'inline-block' }} />
+            <span style={{ color:'rgba(255,255,255,0.8)', fontSize:11 }}>{signal.confidence}% confidence</span>
+          </div>
         </div>
       </div>
     </div>

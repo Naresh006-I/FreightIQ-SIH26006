@@ -1,73 +1,77 @@
-function CardHeader({ icon, title }) {
-  return (
-    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2 bg-sail-navy">
-      <span>{icon}</span>
-      <h3 className="text-[12px] font-bold text-white uppercase tracking-widest">{title}</h3>
-    </div>
-  )
+const LVL = {
+  LOW:    { bg:'#e8f5e9', text:'#1b5e20', border:'#a5d6a7' },
+  MEDIUM: { bg:'#fff8e1', text:'#e65100', border:'#ffe082' },
+  HIGH:   { bg:'#ffebee', text:'#b71c1c', border:'#ef9a9a' },
 }
-
-const RISK_STYLE = {
-  LOW:    { bg:'bg-green-50  border-green-300',  text:'text-green-700',  bar:'bg-green-500'  },
-  MEDIUM: { bg:'bg-yellow-50 border-yellow-300', text:'text-yellow-700', bar:'bg-yellow-500' },
-  HIGH:   { bg:'bg-red-50    border-red-300',    text:'text-red-700',    bar:'bg-red-500'    },
-}
-
-const BD_LABELS = {
+const BD = {
   market_risk:'Market Risk', seasonal_risk:'Seasonal Risk',
   congestion_risk:'Congestion', geopolitical:'Geopolitical', bunker_risk:'Bunker Risk',
 }
 
 export default function RiskCard({ data }) {
   const { overall_score, level, factors, breakdown, var_95_usd, mitigation } = data
-  const s = RISK_STYLE[level] || RISK_STYLE.MEDIUM
+  const s = LVL[level] || LVL.MEDIUM
 
   return (
-    <div className="sail-card overflow-hidden">
-      <CardHeader icon="⚠️" title="Risk Assessment" />
-      <div className="p-4">
+    <div className="card" style={{ overflow:'hidden' }}>
+      <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
+        <span>⚠️</span>
+        <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Risk Assessment</span>
+      </div>
+      <div style={{ padding:16 }}>
+
         {/* Overall */}
-        <div className={`border rounded p-3 mb-3 flex items-center justify-between ${s.bg}`}>
+        <div style={{ background:s.bg, border:`1px solid ${s.border}`, borderRadius:7,
+                      padding:'12px 14px', display:'flex', justifyContent:'space-between',
+                      alignItems:'center', marginBottom:14 }}>
           <div>
-            <p className="text-[10px] text-sail-muted uppercase tracking-wide">Overall Risk Level</p>
-            <p className={`text-2xl font-black ${s.text}`}>{level}</p>
+            <div style={{ fontSize:10, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em' }}>Overall Risk Level</div>
+            <div style={{ fontSize:22, fontWeight:900, color:s.text }}>{level}</div>
           </div>
-          <div className={`text-3xl font-black ${s.text}`}>{overall_score}<span className="text-sm font-normal">/100</span></div>
+          <div style={{ fontSize:30, fontWeight:900, color:s.text }}>
+            {overall_score}<span style={{ fontSize:14, fontWeight:400 }}>/100</span>
+          </div>
         </div>
 
-        {/* Breakdown bars */}
-        <div className="space-y-2 mb-3">
+        {/* Breakdown */}
+        <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:12 }}>
           {Object.entries(breakdown).map(([k, v]) => (
             <div key={k}>
-              <div className="flex justify-between text-[11px] mb-0.5">
-                <span className="text-sail-muted">{BD_LABELS[k] || k}</span>
-                <span className="text-sail-text font-medium">{v}</span>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:3 }}>
+                <span style={{ color:'#6b7a9e' }}>{BD[k] || k}</span>
+                <span style={{ fontWeight:600, color:'#1a2340' }}>{v}</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5">
-                <div className={`h-1.5 rounded-full ${v>60?'bg-red-500':v>35?'bg-yellow-500':'bg-green-500'}`}
-                  style={{width:`${v}%`}} />
+              <div style={{ background:'#e8ecf4', borderRadius:4, height:5, overflow:'hidden' }}>
+                <div style={{
+                  height:5, borderRadius:4,
+                  background: v > 60 ? '#e53935' : v > 35 ? '#ffa726' : '#43a047',
+                  width:`${v}%`, transition:'width 0.4s',
+                }} />
               </div>
             </div>
           ))}
         </div>
 
         {/* VaR */}
-        <div className="bg-sail-offwhite rounded p-2.5 mb-3 flex justify-between items-center">
-          <p className="text-[11px] text-sail-muted font-semibold">Value at Risk (95% Confidence)</p>
-          <p className="text-[13px] font-bold text-sail-navy">${var_95_usd.toLocaleString()}</p>
+        <div style={{ background:'#f5f7fc', border:'1px solid #dde3f4', borderRadius:6,
+                      padding:'9px 12px', display:'flex', justifyContent:'space-between',
+                      alignItems:'center', marginBottom:10 }}>
+          <span style={{ fontSize:11, color:'#6b7a9e', fontWeight:600 }}>Value at Risk (95% Confidence)</span>
+          <span style={{ fontSize:14, fontWeight:800, color:'#003087' }}>${var_95_usd.toLocaleString()}</span>
         </div>
 
         {/* Factors */}
-        <div className="space-y-1 mb-2">
+        <div style={{ marginBottom:10 }}>
           {factors.map((f, i) => (
-            <p key={i} className={`text-[11px] flex items-start gap-1.5 ${s.text}`}>
-              <span className="mt-0.5 flex-shrink-0">•</span>{f}
-            </p>
+            <div key={i} style={{ fontSize:11, color:s.text, display:'flex', gap:6, marginBottom:4 }}>
+              <span style={{ flexShrink:0 }}>•</span>{f}
+            </div>
           ))}
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded p-2">
-          <p className="text-[11px] text-sail-navy">💡 {mitigation}</p>
+        <div style={{ background:'#e3f2fd', border:'1px solid #90caf9', borderRadius:6,
+                      padding:'8px 12px', fontSize:11, color:'#0d47a1' }}>
+          💡 {mitigation}
         </div>
       </div>
     </div>

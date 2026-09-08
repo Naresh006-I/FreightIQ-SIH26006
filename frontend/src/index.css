@@ -2,124 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── SAIL Brand Colors ──────────────────────────────────────────── */
 :root {
-  --sail-navy:       #003087;
-  --sail-navy-dark:  #001f5a;
-  --sail-navy-light: #004aad;
-  --sail-gold:       #C8A84B;
-  --sail-gold-light: #e0c06a;
-  --sail-red:        #C0392B;
-  --sail-white:      #ffffff;
-  --sail-offwhite:   #f4f6fb;
-  --sail-gray:       #e8ecf4;
-  --sail-text:       #1a2340;
-  --sail-muted:      #6b7a9e;
+  --navy:   #003087;
+  --navy2:  #001f5a;
+  --gold:   #C8A84B;
+  --bg:     #f0f2f8;
+  --card:   #ffffff;
+  --border: #dde3f4;
+  --text:   #1a2340;
+  --muted:  #6b7a9e;
 }
+
+* { box-sizing: border-box; }
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: var(--sail-offwhite);
-  color: var(--sail-text);
+  background: var(--bg);
+  color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbar ─────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--sail-gray); }
-::-webkit-scrollbar-thumb { background: var(--sail-navy); border-radius: 4px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #e8ecf4; }
+::-webkit-scrollbar-thumb { background: var(--navy); border-radius: 3px; }
 
-/* ── SAIL card base ─────────────────────────────────────────────── */
-.sail-card {
-  background: white;
-  border: 1px solid #dde3f0;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0,48,135,0.06);
+/* ── Reusable components ─────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0,48,135,0.07);
 }
 
-/* ── SAIL button ────────────────────────────────────────────────── */
-.sail-btn-primary {
-  background: var(--sail-navy);
+.card-header {
+  background: var(--navy);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 9px 9px 0 0;
+}
+.card-header span.title {
   color: white;
-  font-weight: 600;
-  border-radius: 4px;
-  transition: background 0.2s;
-}
-.sail-btn-primary:hover { background: var(--sail-navy-light); }
-
-/* ── Section heading style (matches SAIL site) ─────────────────── */
-.sail-section-title {
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--sail-navy);
-  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
   font-weight: 700;
-}
-
-/* ── Gold underline accent ──────────────────────────────────────── */
-.sail-underline {
-  display: inline-block;
-  border-bottom: 3px solid var(--sail-gold);
-  padding-bottom: 4px;
-}
-
-/* ── Top info bar (like SAIL.co.in) ─────────────────────────────── */
-.sail-topbar {
-  background: white;
-  border-bottom: 1px solid #dde3f0;
-  font-size: 12px;
-  color: #444;
-}
-
-/* ── Main nav bar ────────────────────────────────────────────────── */
-.sail-navbar {
-  background: var(--sail-navy);
-}
-
-/* ── Status badge colors ─────────────────────────────────────────── */
-.badge-green  { background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; }
-.badge-yellow { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
-.badge-red    { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
-.badge-blue   { background: #e3f2fd; color: #0d47a1; border: 1px solid #90caf9; }
-
-/* ── Table styling ───────────────────────────────────────────────── */
-.sail-table th {
-  background: var(--sail-navy);
-  color: white;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 10px 14px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
 }
-.sail-table td {
-  padding: 10px 14px;
-  font-size: 13px;
-  border-bottom: 1px solid #eef1f8;
-  color: var(--sail-text);
-}
-.sail-table tr:hover td { background: #f0f4fb; }
 
-/* ── Input styling ───────────────────────────────────────────────── */
+.gold-bar { height: 3px; background: var(--gold); }
+
+.field-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
 .sail-input {
-  border: 1px solid #c4cde3;
-  border-radius: 4px;
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--sail-text);
-  background: white;
   width: 100%;
+  border: 1px solid #c4cde3;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 13px;
+  color: var(--text);
+  background: white;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s;
+  appearance: none;
 }
-.sail-input:focus { border-color: var(--sail-navy); }
+.sail-input:focus { border-color: var(--navy); }
 
-/* ── Range slider ────────────────────────────────────────────────── */
-input[type=range] { accent-color: var(--sail-navy); }
-
-/* ── Pulse animation ─────────────────────────────────────────────── */
-@keyframes sail-pulse {
-  0%,100% { opacity: 1; }
-  50%      { opacity: 0.4; }
+.btn-primary {
+  background: var(--navy);
+  color: white;
+  font-weight: 600;
+  font-size: 13px;
+  border-radius: 5px;
+  padding: 10px 0;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-.sail-pulse { animation: sail-pulse 2s infinite; }
+.btn-primary:hover:not(:disabled) { background: #0041b8; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Status badge helpers */
+.badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; border: 1px solid; }
+.badge-green  { background:#e8f5e9; color:#1b5e20; border-color:#a5d6a7; }
+.badge-yellow { background:#fff8e1; color:#e65100; border-color:#ffe082; }
+.badge-red    { background:#ffebee; color:#b71c1c; border-color:#ef9a9a; }
+.badge-blue   { background:#e3f2fd; color:#0d47a1; border-color:#90caf9; }
+.badge-navy   { background:var(--navy); color:white; border-color:var(--navy); }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th { background: var(--navy); color: white; padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.data-table td { padding: 9px 12px; border-bottom: 1px solid #eef1fa; color: var(--text); }
+.data-table tr:hover td { background: #f4f6fc; }
+.data-table tr.best td  { background: #eff6ff; }
+.data-table tr.curr td  { background: #fffbeb; }
+
+/* Progress bar */
+.prog-track { width:100%; height:6px; background:#e8ecf4; border-radius:3px; overflow:hidden; }
+.prog-bar   { height:6px; border-radius:3px; transition: width 0.4s; }
+
+/* Stat box */
+.stat-box { background:#f5f7fc; border:1px solid var(--border); border-radius:6px; padding:10px 12px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin 0.7s linear infinite; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.dot-pulse { width:8px; height:8px; border-radius:50%; background:#22c55e; animation:pulse 2s infinite; }
