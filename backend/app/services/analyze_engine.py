@@ -14,7 +14,11 @@ all 6 MVP outputs:
 
 from __future__ import annotations
 import numpy as np
+from datetime import date
 from typing import Any
+
+# Use a fresh RNG per-call for port congestion (avoid identical values)
+import random as _random
 
 from app.data.datasets import (
     PORTS, VESSELS, BASE_FREIGHT, BASE_FOB, KCAL,
@@ -24,12 +28,12 @@ from app.data.datasets import (
 _RNG = np.random.default_rng(77)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-VLSFO_USD     = 580.0    # $/MT bunker
-CO2_FACTOR    = 3.17     # MT CO2 per MT fuel
-CARBON_LEVY   = 30.0     # $/MT CO2
-FILL           = 0.98    # vessel fill factor (bulk coal typically 97-99%)
-PORT_DAYS      = 4       # avg port stay (load + discharge)
-USD_TO_INR     = 84.20   # exchange rate
+VLSFO_USD    = 580.0    # $/MT bunker (Singapore VLSFO)
+CO2_FACTOR   = 3.17     # MT CO₂ per MT HFO
+CARBON_LEVY  = 30.0     # $/MT CO₂  (IMO CII 2026 carbon cost proxy)
+FILL         = 0.98     # vessel fill factor (bulk coal 97-99%)
+PORT_DAYS    = 4        # avg port stay days (load + discharge)
+USD_TO_INR   = 84.20    # 1 USD = ₹84.20  (Sep 2026 rate)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -371,26 +375,39 @@ def _risk_assessment(
 def _savings_opportunity(
     cargo_mt: float, contract: dict, vessel: dict, econ: dict,
 ) -> dict:
-    usd_inr       = econ["usd_inr"]
-    saving_usd    = contract["saving_vs_spot_usd"]
-    # Add vessel optimisation saving (choosing right vessel vs spot fixture)
-    opt_saving    = round(vessel["cost_per_tonne"] * cargo_mt * 0.04, 0)   # ~4% from vessel selection
-    total_usd     = saving_usd + opt_saving
-    total_inr     = round(total_usd * usd_inr, 0)
-    per_tonne_usd = round(total_usd / cargo_mt, 2)
-    per_tonne_inr = round(total_inr / cargo_mt, 2)
+    """
+    Savings vs reactive spot procurement.
+    Two components:
+      1. Contract saving  = spot_total - recommended_contract_total  (USD)
+      2. Vessel optimisation saving = ~4% of vessel voyage cost only  (USD)
+    Both converted to INR at live USD/INR rate.
+    """
+    usd_inr      = econ["usd_inr"]                          # e.g. 84.20
+    contract_usd = contract["saving_vs_spot_usd"]           # already in USD
+
+    # Vessel optimisation: 4% of the pure voyage cost (NOT total freight)
+    voyage_cost_usd   = vessel["total_voyage_cost_usd"]     # hire+fuel+carbon USD
+    opt_saving_usd    = round(voyage_cost_usd * 0.04, 0)    # 4% of voyage cost
+
+    total_usd    = contract_usd + opt_saving_usd
+    total_inr    = round(total_usd * usd_inr, 0)
+
+    per_tonne_usd = round(total_usd / max(cargo_mt, 1), 2)
+    per_tonne_inr = round(total_inr / max(cargo_mt, 1), 2)
 
     return {
         "total_saving_usd":      int(total_usd),
         "total_saving_inr":      int(total_inr),
         "per_tonne_usd":         per_tonne_usd,
         "per_tonne_inr":         per_tonne_inr,
-        "contract_saving_usd":   int(saving_usd),
-        "vessel_opt_saving_usd": int(opt_saving),
+        "contract_saving_usd":   int(contract_usd),
+        "vessel_opt_saving_usd": int(opt_saving_usd),
+        "usd_inr_rate":          usd_inr,
         "breakdown_note": (
-            f"₹{total_inr/1_00_000:.1f} Lakhs total: "
-            f"₹{saving_usd*usd_inr/1_00_000:.1f}L from contract + "
-            f"₹{opt_saving*usd_inr/1_00_000:.1f}L from vessel optimisation."
+            f"₹{total_inr/1_00_000:.1f} Lakhs total saving "
+            f"(@ ₹{usd_inr}/USD): "
+            f"₹{contract_usd*usd_inr/1_00_000:.1f}L from contract optimisation + "
+            f"₹{opt_saving_usd*usd_inr/1_00_000:.1f}L from vessel selection efficiency."
         ),
     }
 

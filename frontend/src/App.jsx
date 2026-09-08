@@ -78,7 +78,6 @@ export default function App() {
             <PortIntelligence defaultMonth={form.target_month} />
           </>
         )}
-        {tab === 'portintel' && <PortIntelligence defaultMonth={form.target_month} />}
       </main>
     </div>
   )

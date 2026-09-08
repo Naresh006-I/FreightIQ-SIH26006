@@ -115,14 +115,19 @@ def get_route(origin_id: str, port_id: str) -> dict:
 
 # ─── Dataset 6: Economic Indicators ──────────────────────────────────────────
 def get_economic_indicators() -> dict:
-    """Current macro snapshot (synthetic but realistic for Sep 2026)."""
+    """
+    Current macro snapshot — calibrated to September 2026.
+    USD/INR: 84.20 (RBI reference rate Sep 2026)
+    """
     return {
-        "usd_inr":           84.20,
-        "wpi_index":         165.3,
-        "iip_growth_pct":    4.8,
-        "gdp_growth_pct":    6.9,
+        "usd_inr":                     84.20,   # ₹84.20 per 1 USD
+        "wpi_index":                   165.3,
+        "iip_growth_pct":              4.8,
+        "gdp_growth_pct":              6.9,
         "india_steel_output_mt_month": 12.4,
         "global_coal_demand_index":    108.2,
+        "vlsfo_usd_mt":                580.0,   # Singapore VLSFO $/MT
+        "bdi_index":                   1842,    # Baltic Dry Index
     }
 
 
@@ -172,22 +177,27 @@ def get_seasonal_factor(target_month: int, target_year: int) -> dict:
 
 
 # ─── Dataset 4: Port Congestion ───────────────────────────────────────────────
+# Use a deterministic but port-specific seed so each port returns different values
+_PORT_SEEDS = {"INPRD": 11, "INVTZ": 22, "INGVP": 33, "INGPL": 44, "INDMA": 55, "INSAG": 66, "INHAL": 77}
+
 def get_port_congestion(port_id: str, month: int) -> dict:
+    """Port-specific congestion with unique random values per port."""
+    seed = _PORT_SEEDS.get(port_id, 99) + month * 100
+    rng  = np.random.default_rng(seed)
     monsoon = month in [6, 7, 8, 9]
     if monsoon:
-        idx  = int(_RNG.integers(55, 82))
-        wait = round(float(_RNG.uniform(3.5, 7.0)), 1)
+        idx  = int(rng.integers(55, 82))
+        wait = round(float(rng.uniform(3.5, 7.0)), 1)
     else:
-        idx  = int(_RNG.integers(18, 55))
-        wait = round(float(_RNG.uniform(1.2, 4.0)), 1)
-
+        idx  = int(rng.integers(18, 55))
+        wait = round(float(rng.uniform(1.2, 4.0)), 1)
     port_name = PORTS.get(port_id, {}).get("name", port_id)
     return {
         "port_id":           port_id,
         "port_name":         port_name,
         "utilisation_pct":   idx,
         "avg_wait_days":     wait,
-        "vessels_at_anchor": int(_RNG.integers(3, 18)),
+        "vessels_at_anchor": int(rng.integers(3, 18)),
         "congestion_level":  "HIGH" if idx > 65 else "MEDIUM" if idx > 40 else "LOW",
     }
 

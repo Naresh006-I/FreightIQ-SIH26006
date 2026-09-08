@@ -108,9 +108,10 @@ def run_simulation(req: SimulateRequest):
     # ── BASELINE ────────────────────────────────────────────────────────────
     baseline_rate = base_rate * seasonal["rate_multiplier"]
     baseline_vc   = _voyage_cost_for_port(req.origin_id, req.port_id, req.quantity_mt, baseline_rate)
-    baseline_total_inr = round(
-        (baseline_vc["total_cost_usd"] + baseline_vc["freight_charge"]) * econ["usd_inr"], 0
-    )
+    # total_cost_usd = vessel hire+fuel+carbon; freight_charge = freight rate × cargo
+    # These are two separate cost components — vessel logistics vs freight market
+    baseline_total_usd = baseline_vc["total_cost_usd"] + int(baseline_vc["freight_charge"])
+    baseline_total_inr = round(baseline_total_usd * econ["usd_inr"], 0)
 
     # ── SCENARIO ADJUSTMENTS ─────────────────────────────────────────────────
     # 1. Terminal delay → extra sea/port days
@@ -128,9 +129,8 @@ def run_simulation(req: SimulateRequest):
     scenario_vc = _voyage_cost_for_port(
         req.origin_id, req.port_id, req.quantity_mt, scenario_rate, extra_days
     )
-    scenario_total_inr = round(
-        (scenario_vc["total_cost_usd"] + scenario_vc["freight_charge"]) * econ["usd_inr"], 0
-    )
+    scenario_total_usd = scenario_vc["total_cost_usd"] + int(scenario_vc["freight_charge"])
+    scenario_total_inr = round(scenario_total_usd * econ["usd_inr"], 0)
 
     delta_cost_inr = scenario_total_inr - baseline_total_inr
     delta_cost_usd = round(delta_cost_inr / econ["usd_inr"], 0)
@@ -190,19 +190,19 @@ def run_simulation(req: SimulateRequest):
 
     return {
         "baseline": {
-            "rate_usd_mt":   round(baseline_rate, 2),
+            "rate_usd_mt":    round(baseline_rate, 2),
             "total_cost_inr": int(baseline_total_inr),
-            "total_cost_usd": int(baseline_total_inr / econ["usd_inr"]),
-            "vessel":        baseline_vc,
-            "label":         "Baseline (No Disruption)",
+            "total_cost_usd": int(baseline_total_usd),
+            "vessel":         baseline_vc,
+            "label":          "Baseline (No Disruption)",
         },
         "scenario": {
-            "rate_usd_mt":       round(scenario_rate, 2),
-            "total_cost_inr":    int(scenario_total_inr),
-            "total_cost_usd":    int(scenario_total_inr / econ["usd_inr"]),
-            "vessel":            scenario_vc,
-            "extra_days":        round(extra_days, 1),
-            "label":             "What-If Scenario",
+            "rate_usd_mt":    round(scenario_rate, 2),
+            "total_cost_inr": int(scenario_total_inr),
+            "total_cost_usd": int(scenario_total_usd),
+            "vessel":         scenario_vc,
+            "extra_days":     round(extra_days, 1),
+            "label":          "What-If Scenario",
         },
         "delta": {
             "cost_inr":      int(delta_cost_inr),
@@ -251,7 +251,8 @@ def port_switch_analysis(req: PortSwitchRequest):
         extra_days    = cong["avg_wait_days"] * 0.5   # congestion penalty
         vc            = _voyage_cost_for_port(req.origin_id, port_id, req.quantity_mt,
                                                scenario_rate, extra_days)
-        total_usd     = vc["total_cost_usd"] + round(scenario_rate * req.quantity_mt)
+        # total_cost = vessel logistics cost + freight market cost
+        total_usd     = vc["total_cost_usd"] + int(vc["freight_charge"])
         total_inr     = round(total_usd * econ["usd_inr"], 0)
 
         results.append({
