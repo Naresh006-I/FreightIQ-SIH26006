@@ -5,12 +5,12 @@ Intelligent Freight Forecasting & Vessel Chartering Platform
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze
+from app.api import dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif
 
 app = FastAPI(
-    title="FreightIQ — SIH26006",
+    title="NayaDisha — SIH26006",
     description="AI-driven freight forecasting and vessel chartering for bulk cargo to East Coast India.",
-    version="1.0.0",
+    version="2.0.0",
 )
 
 app.add_middleware(
@@ -22,11 +22,11 @@ app.add_middleware(
 )
 
 # Mount all routers (workaround for FastAPI 0.141 / Python 3.14)
-for _mod in [dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze]:
+for _mod in [dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif]:
     for _route in _mod.router.routes:
         app.router.routes.append(_route)
 
 
 @app.get("/", tags=["Health"])
 def root():
-    return {"status": "ok", "platform": "FreightIQ", "problem": "SIH26006"}
+    return {"status": "ok", "platform": "NayaDisha", "problem": "SIH26006"}

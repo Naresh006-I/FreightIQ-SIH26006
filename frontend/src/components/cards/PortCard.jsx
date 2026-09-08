@@ -30,7 +30,7 @@ export default function PortCard({ data }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <p className="text-xl font-bold text-white">{port_name}</p>
-          <p className="text-xs text-slate-500 mt-0.5">East Coast India</p>
+          <p className="text-xs text-slate-500 mt-0.5">East Coast India · NayaDisha</p>
         </div>
         <span className={`border rounded-xl px-3 py-1.5 text-xs font-bold ${badgeBg[status_color]}`}>
           {status_color === 'green' ? '✓' : status_color === 'yellow' ? '⚠' : '✗'} {status.split(' ')[0]}
