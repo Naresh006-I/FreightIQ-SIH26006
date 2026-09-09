@@ -1,4 +1,4 @@
-const STYLE = {
+﻿const STYLE = {
   green:  { bg:'#e8f5e9', text:'#1b5e20', bar:'#43a047', border:'#a5d6a7' },
   red:    { bg:'#ffebee', text:'#b71c1c', bar:'#e53935', border:'#ef9a9a' },
   yellow: { bg:'#fff8e1', text:'#e65100', bar:'#ffa726', border:'#ffe082' },
@@ -11,7 +11,6 @@ export default function SignalCard({ data }) {
   return (
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
-        <span>🎯</span>
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Market Entry Signal</span>
       </div>
       <div style={{ padding:16 }}>

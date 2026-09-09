@@ -1,5 +1,5 @@
 /**
- * RouteMap — Interactive Leaflet map  (SIH26006)
+ * RouteMap — Interactive Leaflet map (SAIL Freight Intelligence Platform)
  *
  * Click vessel  → calls onVesselClick()  → App navigates to VesselDashboard
  * Click port    → calls onPortClick(id)  → App navigates to PortDashboard
@@ -87,7 +87,8 @@ function vesselIco() {
       width:30px;height:30px;border-radius:50%;background:#003087;
       border:3px solid #C8A84B;box-shadow:0 2px 10px rgba(0,48,135,.6);
       display:flex;align-items:center;justify-content:center;
-      font-size:15px;color:white;cursor:pointer">&#9875;</div>`,
+      font-size:11px;font-weight:800;color:white;cursor:pointer;
+      font-family:Arial,sans-serif;letter-spacing:0.02em">V</div>`,
     className:'', iconAnchor:[15,15],
   })
 }
@@ -168,10 +169,11 @@ export default function RouteMap({
 
     const map = L.map(mapDiv.current, { center:[12,82], zoom:4, zoomControl:true })
 
-    // ✅ OpenStreetMap — free, no API key
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom:18,
+    // OpenStreetMap standard tiles — English labels, no API key, most reliable
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      crossOrigin: true,
     }).addTo(map)
 
     mapObj.current = map
@@ -224,7 +226,7 @@ export default function RouteMap({
         <div style="font-family:Inter,sans-serif;min-width:180px;font-size:12px">
           <div style="font-weight:800;font-size:13px;color:#003087;margin-bottom:7px;
                border-bottom:1px solid #eee;padding-bottom:5px">
-            ${port.name}${isDest ? ' <span style="color:#C8A84B">★</span>' : ''}
+            ${port.name}${isDest ? ' [Destination]' : ''}
           </div>
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="color:#888;padding:2px 0;font-size:11px">Max Draft</td>
@@ -247,29 +249,13 @@ export default function RouteMap({
       layersRef.current.push(m)
     })
 
-    // Vessel marker
+    // Vessel marker — stationary at origin, blinking to indicate readiness
     const vm = L.marker(route[0], { icon: vesselIco(), zIndexOffset:1000 }).addTo(map)
     vm.on('click', () => { onVesselClickRef.current?.() })
     vm.bindTooltip('Click for vessel dashboard', { direction:'top', offset:[0,-16] })
     layersRef.current.push(vm)
-
-    // ── Slow realistic animation: 120s per cycle ──
-    progRef.current = 0
-    let lastTs = null
-
-    function tick(ts) {
-      if (lastTs === null) lastTs = ts
-      progRef.current = Math.min(progRef.current + (ts - lastTs) / 120_000, 1)
-      lastTs = ts
-      vm.setLatLng(interpolate(route, progRef.current))
-      setVesselPct(Math.round(progRef.current * 100))
-      if (progRef.current < 1) {
-        animRef.current = requestAnimationFrame(tick)
-      } else {
-        setTimeout(() => { progRef.current = 0; lastTs = null; animRef.current = requestAnimationFrame(tick) }, 4000)
-      }
-    }
-    animRef.current = requestAnimationFrame(tick)
+    // Vessel stays at origin — no movement animation
+    setVesselPct(0)
 
     try { map.fitBounds(line.getBounds().pad(0.15)) } catch {}
   }, [originId, destPortId, congestion, initialized])
@@ -310,7 +296,7 @@ export default function RouteMap({
             {origInfo?.name?.split(',')[0]} &nbsp;&#x2192;&nbsp; {destPort?.name}
           </span>
           <span style={{ color:'#C8A84B', fontWeight:700, fontSize:11 }}>
-            Vessel: {vesselPct < 100 ? `${vesselPct}% of route` : 'Arrived'}
+            Vessel: At Origin Port
           </span>
           {/* Fullscreen button */}
           <button
@@ -376,7 +362,7 @@ export default function RouteMap({
           { l:'Destination', v: destPort?.name || destPortId },
           { l:'Distance',    v: DIST[originId] },
           { l:'Sailing Time',v: TIME[originId] },
-          { l:'Status',      v: vesselPct < 100 ? `In Transit — ${vesselPct}%` : 'Arrived' },
+          { l:'Status',      v: 'At Origin — Awaiting Departure' },
         ].map(s => (
           <div key={s.l}>
             <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.l}</div>
@@ -400,8 +386,9 @@ function LegItem({ color, border, label, pulse, vessel }) {
         {vessel ? (
           <div style={{ width:14, height:14, borderRadius:'50%', background:'#003087',
                         border:'2px solid #C8A84B', display:'flex', alignItems:'center',
-                        justifyContent:'center', fontSize:8, color:'white', position:'relative', zIndex:1 }}>
-            &#9875;
+                        justifyContent:'center', fontSize:7, fontWeight:800, color:'white',
+                        fontFamily:'Arial,sans-serif', position:'relative', zIndex:1 }}>
+            V
           </div>
         ) : (
           <div style={{ width:14, height:14, borderRadius:'50%', background: color || '#666',

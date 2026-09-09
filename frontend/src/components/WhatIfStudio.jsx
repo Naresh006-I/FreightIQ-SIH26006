@@ -142,7 +142,7 @@ export default function WhatIfStudio({ defaultForm }) {
               ? <><span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block' }} /> Running…</>
               : <><span style={{ color:'#C8A84B' }}>▶</span> Run Simulation</>}
           </button>
-          {error && <div style={{ fontSize:11, color:'#b71c1c' }}>⚠ {error}</div>}
+          {error && <div style={{ fontSize:11, color:'#b71c1c' }}>{error}</div>}
         </div>
       </div>
 
@@ -197,7 +197,7 @@ export default function WhatIfStudio({ defaultForm }) {
                     <div style={{ fontSize:28, fontWeight:900, color:RISK_COLOR[rl] }}>
                       ₹{(result.scenario.total_cost_inr/1_00_000).toFixed(1)}<span style={{ fontSize:14 }}>L</span>
                     </div>
-                    <div style={{ fontSize:11, color:RISK_COLOR[rl], fontWeight:600 }}>⚠ With Disruptions</div>
+                    <div style={{ fontSize:11, color:RISK_COLOR[rl], fontWeight:600 }}>With Disruptions</div>
                   </div>
                 </div>
                 <div style={{ background:RISK_COLOR[rl], borderRadius:8, padding:'14px 28px', textAlign:'center', minWidth:130 }}>

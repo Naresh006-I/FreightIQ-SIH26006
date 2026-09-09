@@ -1,9 +1,8 @@
-export default function ContractCard({ data }) {
+﻿export default function ContractCard({ data }) {
   const { recommended_type, recommended_rate, recommended_cost_usd, saving_vs_spot_usd, rationale, options } = data
   return (
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
-        <span>📄</span>
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Contract Recommendation</span>
       </div>
       <div style={{ padding:16 }}>

@@ -16,7 +16,7 @@ export default function SummaryBanner({ input, signal, seasonal }) {
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>
           Analysis Summary — SAIL Freight Intelligence Platform
         </span>
-        <span style={{ color:'#C8A84B', fontSize:11 }}>SIH26006</span>
+        <span style={{ color:'#C8A84B', fontSize:11 }}>Ministry of Steel</span>
       </div>
       <div style={{ height:3, background:'#C8A84B' }} />
 
@@ -38,13 +38,13 @@ export default function SummaryBanner({ input, signal, seasonal }) {
             {seasonal.peak_demand && (
               <span style={{ fontSize:11, background:'#fff3e0', color:'#e65100',
                               border:'1px solid #ffcc80', padding:'3px 10px', borderRadius:20, fontWeight:600 }}>
-                📈 Post-Monsoon Demand Peak
+                Post-Monsoon Demand Peak
               </span>
             )}
             {seasonal.monsoon && (
               <span style={{ fontSize:11, background:'#e3f2fd', color:'#0d47a1',
                               border:'1px solid #90caf9', padding:'3px 10px', borderRadius:20, fontWeight:600 }}>
-                🌧️ Monsoon Season Active
+                Monsoon Season Active
               </span>
             )}
           </div>

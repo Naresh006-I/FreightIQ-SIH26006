@@ -1,4 +1,4 @@
-const CII = {
+﻿const CII = {
   A: { bg:'#e8f5e9', text:'#1b5e20', border:'#a5d6a7' },
   B: { bg:'#f1f8e9', text:'#33691e', border:'#c5e1a5' },
   C: { bg:'#fff8e1', text:'#e65100', border:'#ffe082' },
@@ -13,7 +13,6 @@ export default function VesselCard({ data }) {
   return (
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
-        <span>🚢</span>
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Recommended Vessel</span>
       </div>
       <div style={{ padding:16 }}>

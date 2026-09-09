@@ -286,7 +286,7 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
         </div>
 
         <div style={{ fontSize:11, color:'#aab', textAlign:'center' }}>
-          SAIL Internal · AI Decision Support · SIH26006
+          SAIL Internal · AI Decision Support
         </div>
       </div>
     </form>

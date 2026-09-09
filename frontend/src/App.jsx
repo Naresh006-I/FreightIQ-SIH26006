@@ -86,7 +86,7 @@ export default function App() {
           </div>
           <div style={{ fontSize:11, color:'#6b7a9e', background:'#f5f7fc',
                         border:'1px solid #dde3f4', padding:'4px 12px', borderRadius:4 }}>
-            SAIL · Ministry of Steel · SIH26006
+            SAIL · Ministry of Steel
           </div>
         </div>
 

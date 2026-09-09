@@ -1,4 +1,4 @@
-const CON_COLOR = { LOW:'#1b5e20', MEDIUM:'#e65100', HIGH:'#b71c1c' }
+﻿const CON_COLOR = { LOW:'#1b5e20', MEDIUM:'#e65100', HIGH:'#b71c1c' }
 const CON_BAR   = { LOW:'#43a047', MEDIUM:'#ffa726', HIGH:'#e53935' }
 
 export default function PortCard({ data }) {
@@ -24,7 +24,6 @@ export default function PortCard({ data }) {
   return (
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
-        <span>⚓</span>
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Port Compatibility</span>
       </div>
       <div style={{ padding:16 }}>
@@ -35,7 +34,7 @@ export default function PortCard({ data }) {
             <div style={{ fontSize:11, color:'#6b7a9e', marginTop:2 }}>{berths_available} Berths · East Coast India</div>
           </div>
           <div style={{ ...badgeStyle, padding:'5px 12px', borderRadius:5, fontSize:12, fontWeight:700 }}>
-            {status_color === 'green' ? '✓' : status_color === 'yellow' ? '⚠' : '✗'}&nbsp;
+            {status_color === 'green' ? 'Compatible' : status_color === 'yellow' ? 'Warning' : 'Incompatible'}&nbsp;
             {status.split(' ')[0]}
           </div>
         </div>
@@ -80,7 +79,7 @@ export default function PortCard({ data }) {
         {issues.length > 0 && issues.map((iss, i) => (
           <div key={i} style={{ fontSize:11, color:'#e65100', background:'#fff8e1',
                                   border:'1px solid #ffe082', borderRadius:5, padding:'6px 10px', marginTop:8 }}>
-            ⚠ {iss}
+            {iss}
           </div>
         ))}
       </div>

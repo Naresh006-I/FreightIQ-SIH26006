@@ -9,10 +9,10 @@ const PORTS   = ['INPRD','INVTZ','INGVP','INGPL','INDMA','INHAL']
 const PORT_LBL= { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia' }
 
 const AL = {
-  CRITICAL:{ hdrBg:'#b71c1c', cardBg:'#ffebee', border:'#ef9a9a', text:'#b71c1c', bar:'#e53935', icon:'🚨' },
-  HIGH:    { hdrBg:'#bf360c', cardBg:'#fff3e0', border:'#ffcc80', text:'#bf360c', bar:'#ffa726', icon:'⚠️' },
-  MEDIUM:  { hdrBg:'#e65100', cardBg:'#fff8e1', border:'#ffe082', text:'#e65100', bar:'#ffd54f', icon:'⚡' },
-  LOW:     { hdrBg:'#1b5e20', cardBg:'#e8f5e9', border:'#a5d6a7', text:'#1b5e20', bar:'#43a047', icon:'✅' },
+  CRITICAL:{ hdrBg:'#b71c1c', cardBg:'#ffebee', border:'#ef9a9a', text:'#b71c1c', bar:'#e53935', icon:'CRITICAL' },
+  HIGH:    { hdrBg:'#bf360c', cardBg:'#fff3e0', border:'#ffcc80', text:'#bf360c', bar:'#ffa726', icon:'HIGH'     },
+  MEDIUM:  { hdrBg:'#e65100', cardBg:'#fff8e1', border:'#ffe082', text:'#e65100', bar:'#ffd54f', icon:'MEDIUM'   },
+  LOW:     { hdrBg:'#1b5e20', cardBg:'#e8f5e9', border:'#a5d6a7', text:'#1b5e20', bar:'#43a047', icon:'LOW'      },
 }
 
 function Lbl({ c }) { return <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:3 }}>{c}</label> }
@@ -52,7 +52,7 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
         <div style={{ background:'#003087', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
             <div style={{ color:'white', fontWeight:700, fontSize:14, letterSpacing:'0.04em' }}>
-              🛰️ AI PORT INTELLIGENCE — EAST COAST INDIA
+              AI PORT INTELLIGENCE — EAST COAST INDIA
             </div>
             <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11, marginTop:3 }}>
               Automated congestion · weather risk · delay cost analysis across all SAIL procurement ports
@@ -80,10 +80,10 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
             {/* Summary */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
               {[
-                { icon:'🚨', label:'Highest Risk Port',  value: intel.highest_risk_port, color:'#b71c1c' },
-                { icon:'🌧️', label:'Monsoon Active',     value: intel.monsoon_active ? 'YES — ACTIVE' : 'NO', color: intel.monsoon_active ? '#0d47a1' : '#1b5e20' },
-                { icon:'💸', label:'Avg Delay Cost',     value:`₹${(intel.avg_delay_cost_inr/1_00_000).toFixed(1)}L/vessel` },
-                { icon:'⚓', label:'Ports Analysed',     value:`${intel.reports.length} Ports` },
+                { icon:'[!]', label:'Highest Risk Port',  value: intel.highest_risk_port, color:'#b71c1c' },
+                { icon:'[M]', label:'Monsoon Active',     value: intel.monsoon_active ? 'YES — ACTIVE' : 'NO', color: intel.monsoon_active ? '#0d47a1' : '#1b5e20' },
+                { icon:'[C]', label:'Avg Delay Cost',     value:`Rs.${(intel.avg_delay_cost_inr/1_00_000).toFixed(1)}L/vessel` },
+                { icon:'[P]', label:'Ports Analysed',     value:`${intel.reports.length} Ports` },
               ].map(t => (
                 <div key={t.label} style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7, padding:'12px 14px' }}>
                   <div style={{ fontSize:10, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>{t.icon} {t.label}</div>
@@ -133,10 +133,10 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
                           <div style={{ height:5, background:s.bar, borderRadius:3, width:`${r.berth_efficiency_pct}%` }} />
                         </div>
                       </div>
-                      <div style={{ fontSize:11, color:s.text, fontWeight:500, lineHeight:1.55 }}>💡 {r.ai_insight}</div>
+                      <div style={{ fontSize:11, color:s.text, fontWeight:500, lineHeight:1.55 }}>{r.ai_insight}</div>
                       {r.silting_risk && (
                         <div style={{ fontSize:10, color:'#e65100', background:'rgba(255,255,255,0.7)', border:'1px solid #ffcc80', borderRadius:4, padding:'4px 8px', marginTop:6 }}>
-                          ⚠ River silting risk — confirm tidal window
+                        River silting risk — confirm tidal window
                         </div>
                       )}
                     </div>
@@ -152,7 +152,7 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
       <div className="card" style={{ overflow:'hidden' }}>
         <div style={{ background:'#003087', padding:'14px 20px' }}>
           <div style={{ color:'white', fontWeight:700, fontSize:14, letterSpacing:'0.04em' }}>
-            🔄 SMART PORT SWITCHER — AI COST COMPARISON
+            SMART PORT SWITCHER — AI COST COMPARISON
           </div>
           <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11, marginTop:3 }}>
             AI ranks all compatible East Coast ports by total landed cost and recommends the optimal destination
@@ -178,7 +178,7 @@ export default function PortIntelligence({ defaultMonth = 11 }) {
                 ? <><span style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'white', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block' }} /> Analysing…</>
                 : <><span style={{ color:'#C8A84B' }}>▶</span> Analyse Alternate Ports</>}
             </button>
-            {swError && <div style={{ fontSize:11, color:'#b71c1c' }}>⚠ {swError}</div>}
+            {swError && <div style={{ fontSize:11, color:'#b71c1c' }}>{swError}</div>}
           </div>
 
           {/* Results */}

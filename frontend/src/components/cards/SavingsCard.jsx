@@ -1,4 +1,4 @@
-export default function SavingsCard({ data, usdInr }) {
+﻿export default function SavingsCard({ data, usdInr }) {
   const { total_saving_usd, total_saving_inr, per_tonne_usd, per_tonne_inr,
           contract_saving_usd, vessel_opt_saving_usd, breakdown_note } = data
   const lakhs = (total_saving_inr / 1_00_000).toFixed(1)
@@ -7,7 +7,6 @@ export default function SavingsCard({ data, usdInr }) {
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'12px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <span>💰</span>
           <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>
             Estimated Savings Opportunity
           </span>

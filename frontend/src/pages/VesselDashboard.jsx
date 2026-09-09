@@ -72,28 +72,28 @@ export default function VesselDashboard({ vesselData, originId, destPortId, vess
             title="Vessel Type"
             value={v.vessel_type || 'Kamsarmax'}
             sub={`${(v.dwt||82000).toLocaleString()} DWT`}
-            icon="&#9875;"
+            icon="V"
             color="#003087"
           />
           <HeroCard
             title="Cargo on Board"
             value={`${(v.cargo_mt||80000).toLocaleString()} MT`}
             sub={`${((v.cargo_mt||80000)/1000).toFixed(0)}k Metric Tonnes`}
-            icon="&#11014;"
+            icon="C"
             color="#1565c0"
           />
           <HeroCard
             title="Days at Sea"
             value={`${v.sea_days || 14} days`}
             sub={`Total voyage: ${TIME[originId]}`}
-            icon="&#128336;"
+            icon="D"
             color="#0277bd"
           />
           <HeroCard
             title="IMO CII Grade"
             value={cii}
             sub="Carbon Intensity"
-            icon="&#127807;"
+            icon="E"
             color={CII_COLOR[cii]}
             bg={CII_BG[cii]}
           />
@@ -116,8 +116,8 @@ export default function VesselDashboard({ vesselData, originId, destPortId, vess
                             width:20, height:20, borderRadius:'50%', background:'#C8A84B',
                             border:'3px solid white', marginRight:-10,
                             display:'flex', alignItems:'center', justifyContent:'center',
-                            fontSize:10, color:'white' }}>
-                &#9875;
+                            fontSize:8, fontWeight:800, color:'white', fontFamily:'Arial,sans-serif' }}>
+                V
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-const LVL = {
+﻿const LVL = {
   LOW:    { bg:'#e8f5e9', text:'#1b5e20', border:'#a5d6a7' },
   MEDIUM: { bg:'#fff8e1', text:'#e65100', border:'#ffe082' },
   HIGH:   { bg:'#ffebee', text:'#b71c1c', border:'#ef9a9a' },
@@ -15,7 +15,6 @@ export default function RiskCard({ data }) {
   return (
     <div className="card" style={{ overflow:'hidden' }}>
       <div style={{ background:'#003087', padding:'10px 16px', display:'flex', alignItems:'center', gap:8 }}>
-        <span>⚠️</span>
         <span style={{ color:'white', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em' }}>Risk Assessment</span>
       </div>
       <div style={{ padding:16 }}>
@@ -71,7 +70,7 @@ export default function RiskCard({ data }) {
 
         <div style={{ background:'#e3f2fd', border:'1px solid #90caf9', borderRadius:6,
                       padding:'8px 12px', fontSize:11, color:'#0d47a1' }}>
-          💡 {mitigation}
+          {mitigation}
         </div>
       </div>
     </div>
