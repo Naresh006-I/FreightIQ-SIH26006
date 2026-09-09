@@ -69,6 +69,14 @@ PORTS: dict = {
         "commodities": ["thermal_coal", "coking_coal"],
         "lightering_required": True,  # Capesize must lighter at Sagar
     },
+    "INCHP": {
+        "id": "INCHP", "name": "Chennai", "state": "Tamil Nadu",
+        "lat": 13.083, "lon": 80.299,
+        "max_draft_m": 14.0, "loa_max_m": 270, "beam_max_m": 43,
+        "berths": 11, "annual_capacity_mt": 72_000_000,
+        "commodities": ["thermal_coal", "coking_coal", "iron_ore", "limestone", "bauxite"],
+        "lightering_required": False,
+    },
 }
 
 # ─── Dataset 5: Vessel Reference ─────────────────────────────────────────────
@@ -101,6 +109,12 @@ ROUTES: dict = {
     ("MZ", "INGVP"): {"distance_nm": 5_400, "sailing_days": 17, "chokepoints": [],           "canal": None},
     ("RU", "INPRD"): {"distance_nm": 7_200, "sailing_days": 22, "chokepoints": ["Suez"],     "canal": "Suez"},
     ("RU", "INDMA"): {"distance_nm": 7_300, "sailing_days": 23, "chokepoints": ["Suez"],     "canal": "Suez"},
+    # ── Chennai routes ──────────────────────────────────────────────────────
+    ("AU", "INCHP"): {"distance_nm": 4_350, "sailing_days": 13, "chokepoints": ["Malacca"], "canal": None},
+    ("ID", "INCHP"): {"distance_nm": 1_850, "sailing_days":  6, "chokepoints": ["Malacca"], "canal": None},
+    ("US", "INCHP"): {"distance_nm": 11_200,"sailing_days": 34, "chokepoints": ["Suez","Malacca"], "canal": "Suez"},
+    ("MZ", "INCHP"): {"distance_nm": 4_900, "sailing_days": 15, "chokepoints": [],           "canal": None},
+    ("RU", "INCHP"): {"distance_nm": 6_800, "sailing_days": 21, "chokepoints": ["Suez"],     "canal": "Suez"},
 }
 
 def get_route(origin_id: str, port_id: str) -> dict:
@@ -116,18 +130,18 @@ def get_route(origin_id: str, port_id: str) -> dict:
 # ─── Dataset 6: Economic Indicators ──────────────────────────────────────────
 def get_economic_indicators() -> dict:
     """
-    Current macro snapshot — calibrated to September 2026.
-    USD/INR: 84.20 (RBI reference rate Sep 2026)
+    Current macro snapshot — calibrated to current market rates.
+    USD/INR: 94.35 (RBI reference rate, current)
     """
     return {
-        "usd_inr":                     84.20,   # ₹84.20 per 1 USD
+        "usd_inr":                     94.35,   # Rs.94.35 per 1 USD (current RBI rate)
         "wpi_index":                   165.3,
         "iip_growth_pct":              4.8,
         "gdp_growth_pct":              6.9,
         "india_steel_output_mt_month": 12.4,
         "global_coal_demand_index":    108.2,
         "vlsfo_usd_mt":                580.0,   # Singapore VLSFO $/MT
-        "bdi_index":                   1842,    # Baltic Dry Index
+        "bdi_index":                   3584,    # Baltic Dry Index
     }
 
 
@@ -178,7 +192,7 @@ def get_seasonal_factor(target_month: int, target_year: int) -> dict:
 
 # ─── Dataset 4: Port Congestion ───────────────────────────────────────────────
 # Use a deterministic but port-specific seed so each port returns different values
-_PORT_SEEDS = {"INPRD": 11, "INVTZ": 22, "INGVP": 33, "INGPL": 44, "INDMA": 55, "INSAG": 66, "INHAL": 77}
+_PORT_SEEDS = {"INPRD": 11, "INVTZ": 22, "INGVP": 33, "INGPL": 44, "INDMA": 55, "INSAG": 66, "INHAL": 77, "INCHP": 88}
 
 def get_port_congestion(port_id: str, month: int) -> dict:
     """Port-specific congestion with unique random values per port."""
@@ -205,11 +219,11 @@ def get_port_congestion(port_id: str, month: int) -> dict:
 # ─── Dataset 1+2: Market Rates ───────────────────────────────────────────────
 # Base freight rates ($/MT) by origin — calibrated to real BCI/BPI averages
 BASE_FREIGHT: dict = {
-    "AU": {"INPRD": 11.2, "INVTZ": 10.8, "INGVP": 10.8, "INGPL": 11.5, "INDMA": 11.8, "INHAL": 13.2},
-    "ID": {"INPRD":  7.1, "INVTZ":  6.8, "INGVP":  6.8, "INGPL":  7.3, "INDMA":  7.5, "INHAL":  8.4},
-    "US": {"INPRD": 24.5, "INVTZ": 23.8, "INGVP": 23.8, "INGPL": 24.8, "INDMA": 25.2, "INHAL": 27.0},
-    "MZ": {"INPRD": 13.5, "INVTZ": 13.0, "INGVP": 13.0, "INGPL": 13.8, "INDMA": 14.2, "INHAL": 15.5},
-    "RU": {"INPRD": 16.8, "INVTZ": 16.2, "INGVP": 16.2, "INGPL": 17.0, "INDMA": 17.5, "INHAL": 19.0},
+    "AU": {"INPRD": 11.2, "INVTZ": 10.8, "INGVP": 10.8, "INGPL": 11.5, "INDMA": 11.8, "INHAL": 13.2, "INCHP": 10.5},
+    "ID": {"INPRD":  7.1, "INVTZ":  6.8, "INGVP":  6.8, "INGPL":  7.3, "INDMA":  7.5, "INHAL":  8.4, "INCHP":  6.5},
+    "US": {"INPRD": 24.5, "INVTZ": 23.8, "INGVP": 23.8, "INGPL": 24.8, "INDMA": 25.2, "INHAL": 27.0, "INCHP": 23.2},
+    "MZ": {"INPRD": 13.5, "INVTZ": 13.0, "INGVP": 13.0, "INGPL": 13.8, "INDMA": 14.2, "INHAL": 15.5, "INCHP": 12.5},
+    "RU": {"INPRD": 16.8, "INVTZ": 16.2, "INGVP": 16.2, "INGPL": 17.0, "INDMA": 17.5, "INHAL": 19.0, "INCHP": 15.8},
 }
 
 # Base FOB commodity prices ($/MT)

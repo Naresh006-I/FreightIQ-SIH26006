@@ -33,7 +33,7 @@ CO2_FACTOR   = 3.17     # MT CO₂ per MT HFO
 CARBON_LEVY  = 30.0     # $/MT CO₂  (IMO CII 2026 carbon cost proxy)
 FILL         = 0.98     # vessel fill factor (bulk coal 97-99%)
 PORT_DAYS    = 4        # avg port stay days (load + discharge)
-USD_TO_INR   = 84.20    # 1 USD = ₹84.20  (Sep 2026 rate)
+USD_TO_INR   = 94.35    # 1 USD = Rs.94.35  (current RBI rate)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -382,7 +382,7 @@ def _savings_opportunity(
       2. Vessel optimisation saving = ~4% of vessel voyage cost only  (USD)
     Both converted to INR at live USD/INR rate.
     """
-    usd_inr      = econ["usd_inr"]                          # e.g. 84.20
+    usd_inr      = econ["usd_inr"]                          # e.g. 94.35
     contract_usd = contract["saving_vs_spot_usd"]           # already in USD
 
     # Vessel optimisation: 4% of the pure voyage cost (NOT total freight)

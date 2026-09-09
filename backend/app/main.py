@@ -5,7 +5,7 @@ Intelligent Freight Forecasting & Vessel Chartering Platform
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif, bdi
+from app.api import dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif, bdi, route_optimizer
 
 app = FastAPI(
     title="NayaDisha — SIH26006",
@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 # Mount all routers (workaround for FastAPI 0.141 / Python 3.14)
-for _mod in [dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif, bdi]:
+for _mod in [dashboard, forecast, vessels, arbitrage, risk, scheduler, analyze, whatif, bdi, route_optimizer]:
     for _route in _mod.router.routes:
         app.router.routes.append(_route)
 

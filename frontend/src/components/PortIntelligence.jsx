@@ -5,8 +5,8 @@ const MONTHS  = [{v:1,l:'January'},{v:2,l:'February'},{v:3,l:'March'},{v:4,l:'Ap
 const COMS    = ['thermal_coal','coking_coal','iron_ore','limestone','bauxite']
 const ORIS    = ['AU','ID','US','MZ','RU']
 const ORI_LBL = { AU:'Australia', ID:'Indonesia', US:'USA', MZ:'Mozambique', RU:'Russia' }
-const PORTS   = ['INPRD','INVTZ','INGVP','INGPL','INDMA','INHAL']
-const PORT_LBL= { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia' }
+const PORTS   = ['INPRD','INVTZ','INGVP','INGPL','INDMA','INHAL','INCHP']
+const PORT_LBL= { INPRD:'Paradip', INVTZ:'Visakhapatnam', INGVP:'Gangavaram', INGPL:'Gopalpur', INDMA:'Dhamra', INHAL:'Haldia', INCHP:'Chennai' }
 
 const AL = {
   CRITICAL:{ hdrBg:'#b71c1c', cardBg:'#ffebee', border:'#ef9a9a', text:'#b71c1c', bar:'#e53935', icon:'CRITICAL' },

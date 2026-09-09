@@ -15,7 +15,7 @@ export default function VesselDashboard({ vesselData, originId, destPortId, vess
   const TIME  = { AU:'15 days', ID:'7 days', US:'35 days', MZ:'17 days', RU:'22 days' }
 
   const v     = vesselData || {}
-  const usdInr= 84.20
+  const usdInr= 94.35
 
   const CII_COLOR = {
     A:'#1b5e20', B:'#2e7d32', C:'#f57f17', D:'#e65100', E:'#b71c1c',

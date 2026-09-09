@@ -12,6 +12,7 @@ const PORT_META = {
   INGPL:{ name:'Gopalpur',      state:'Odisha',         maxDraft:12.5, berths:4,  annualCap:20,  lat:19.263, lon:84.893 },
   INDMA:{ name:'Dhamra',        state:'Odisha',         maxDraft:16.5, berths:6,  annualCap:50,  lat:20.892, lon:86.879 },
   INHAL:{ name:'Haldia',        state:'West Bengal',    maxDraft:8.5,  berths:9,  annualCap:45,  lat:22.026, lon:88.069 },
+  INCHP:{ name:'Chennai',       state:'Tamil Nadu',     maxDraft:14.0, berths:11, annualCap:72,  lat:13.083, lon:80.299 },
 }
 
 const NEARBY = {
@@ -21,6 +22,7 @@ const NEARBY = {
   INGPL:['INVTZ','INGVP','INDMA'],
   INDMA:['INPRD','INGPL','INHAL'],
   INHAL:['INDMA','INPRD','INGPL'],
+  INCHP:['INVTZ','INGVP','INGPL'],
 }
 
 const VESSEL_DRAFTS = {

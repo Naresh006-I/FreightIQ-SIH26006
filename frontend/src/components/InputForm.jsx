@@ -21,6 +21,7 @@ const PORTS = [
   { id:'INGPL', label:'Gopalpur',       state:'Odisha',         draft:12.5 },
   { id:'INDMA', label:'Dhamra',         state:'Odisha',         draft:16.5 },
   { id:'INHAL', label:'Haldia',         state:'West Bengal',    draft:8.5  },
+  { id:'INCHP', label:'Chennai',        state:'Tamil Nadu',     draft:14.0 },
 ]
 const MONTHS = [
   {v:1,l:'January'},{v:2,l:'February'},{v:3,l:'March'},{v:4,l:'April'},
@@ -111,7 +112,7 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
 
     const ext = file.name.split('.').pop().toLowerCase()
     if (!['csv','xlsx','xls'].includes(ext)) {
-      setFileErr('Unsupported file type. Please upload a .csv, .xlsx or .xls file.')
+      setFileErr('This is not a valid dataset. Please upload a .csv or .xlsx file.')
       return
     }
 
@@ -122,22 +123,21 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
         if (ext === 'csv') {
           text = ev.target.result
         } else {
-          // Basic XLSX: read as binary, extract first sheet text via simple parsing
-          // For full XLSX support we parse the raw XML inside the zip
-          // Since we can't use xlsx library, parse CSV-exported content
-          setFileErr('Excel files: please save as CSV first, or we handle basic XLSX below.')
-          // Try to read as text anyway — works for some xlsx saved as CSV
+        setFileErr('Excel files: please save as CSV first, or we handle basic XLSX below.')
           text = ev.target.result
         }
 
         const lines   = text.split(/\r?\n/).filter(l => l.trim())
-        if (lines.length < 2) { setFileErr('File must have a header row and at least one data row.'); return }
+        if (lines.length < 2) {
+          setFileErr('This is not a valid dataset. File must have a header row and at least one data row.')
+          return
+        }
         const headers = lines[0].split(',')
         const values  = lines[1].split(',')
         const parsed  = parseCSVRow(headers, values)
 
         if (Object.keys(parsed).length === 0) {
-          setFileErr('Could not map any columns. Expected headers: commodity, quantity_mt, origin_id, port_id, target_month, target_year, contract_months')
+          setFileErr('This is not a valid dataset. Could not recognise any column headers.')
           return
         }
 
@@ -195,9 +195,6 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
               {fileErr}
             </div>
           )}
-          <div style={{ marginTop:8, fontSize:10, color:'#aab' }}>
-            Required columns: commodity, quantity_mt, origin_id, port_id, target_month, target_year, contract_months
-          </div>
         </div>
 
         {/* Divider */}
@@ -283,10 +280,6 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
               : 'Run Analysis'
             }
           </button>
-        </div>
-
-        <div style={{ fontSize:11, color:'#aab', textAlign:'center' }}>
-          SAIL Internal · AI Decision Support
         </div>
       </div>
     </form>

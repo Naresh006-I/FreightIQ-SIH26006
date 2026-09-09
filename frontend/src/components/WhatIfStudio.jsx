@@ -3,7 +3,7 @@ import { apiFetch } from '../config'
 
 const COMS  = [{ id:'thermal_coal',label:'Thermal Coal'},{ id:'coking_coal',label:'Coking Coal'},{ id:'iron_ore',label:'Iron Ore'}]
 const ORIS  = [{ id:'AU',label:'Australia'},{ id:'ID',label:'Indonesia'},{ id:'US',label:'USA'},{ id:'MZ',label:'Mozambique'},{ id:'RU',label:'Russia'}]
-const PORTS = [{ id:'INPRD',label:'Paradip'},{ id:'INVTZ',label:'Visakhapatnam'},{ id:'INGVP',label:'Gangavaram'},{ id:'INGPL',label:'Gopalpur'},{ id:'INDMA',label:'Dhamra'},{ id:'INHAL',label:'Haldia'}]
+const PORTS = [{ id:'INPRD',label:'Paradip'},{ id:'INVTZ',label:'Visakhapatnam'},{ id:'INGVP',label:'Gangavaram'},{ id:'INGPL',label:'Gopalpur'},{ id:'INDMA',label:'Dhamra'},{ id:'INHAL',label:'Haldia'},{ id:'INCHP',label:'Chennai'}]
 
 const RISK_COLOR = { LOW:'#1b5e20', MEDIUM:'#e65100', HIGH:'#b45309', CRITICAL:'#b71c1c' }
 const RISK_BG    = { LOW:'#e8f5e9', MEDIUM:'#fff8e1', HIGH:'#fff3e0',  CRITICAL:'#ffebee' }
