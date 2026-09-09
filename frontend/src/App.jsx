@@ -4,50 +4,84 @@ import InputForm        from './components/InputForm'
 import ResultsPanel     from './components/ResultsPanel'
 import WhatIfStudio     from './components/WhatIfStudio'
 import PortIntelligence from './components/PortIntelligence'
+import VesselDashboard  from './pages/VesselDashboard'
+import PortDashboard    from './pages/PortDashboard'
 import { apiFetch }     from './config'
 
 const DEFAULT_FORM = {
-  commodity: 'thermal_coal', quantity_mt: 80000,
-  origin_id: 'AU', port_id: 'INPRD',
-  target_month: 11, target_year: 2026, contract_months: 6,
+  commodity:'thermal_coal', quantity_mt:80000,
+  origin_id:'AU', port_id:'INPRD',
+  target_month:11, target_year:2026, contract_months:6,
 }
 
 export default function App() {
-  const [tab,     setTab]     = useState('analyze')
-  const [form,    setForm]    = useState(DEFAULT_FORM)
-  const [result,  setResult]  = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState(null)
+  const [tab,        setTab]        = useState('analyze')
+  const [form,       setForm]       = useState(DEFAULT_FORM)
+  const [result,     setResult]     = useState(null)
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState(null)
+
+  // Sub-page navigation state
+  // subPage: null | { type:'vessel' } | { type:'port', portId:string }
+  const [subPage,    setSubPage]    = useState(null)
+  const [vesselPct,  setVesselPct]  = useState(0)
 
   async function handleAnalyze(formData) {
-    setLoading(true); setError(null); setResult(null)
+    setLoading(true); setError(null); setResult(null); setSubPage(null)
     try {
-      setResult(await apiFetch('/api/analyze', { method:'POST', body: JSON.stringify(formData) }))
+      setResult(await apiFetch('/api/analyze', { method:'POST', body:JSON.stringify(formData) }))
     } catch (e) {
       setError(e.message || 'Failed to connect. Ensure backend is running on port 8000.')
     } finally { setLoading(false) }
   }
 
+  // ── If a sub-page is active, render it full-page (replaces main content) ──
+  if (subPage?.type === 'vessel' && result) {
+    const v = result.vessel_recommendation
+    return (
+      <VesselDashboard
+        vesselData={{ ...v, cargo_mt: form.quantity_mt, draft_m: VESSEL_DRAFTS[v.vessel_type] || 13.8 }}
+        originId={form.origin_id}
+        destPortId={form.port_id}
+        vesselPct={vesselPct}
+        onBack={() => setSubPage(null)}
+      />
+    )
+  }
+
+  if (subPage?.type === 'port') {
+    const v = result?.vessel_recommendation
+    return (
+      <PortDashboard
+        portId={subPage.portId}
+        vesselData={v ? { ...v, cargo_mt: form.quantity_mt, draft_m: VESSEL_DRAFTS[v.vessel_type] || 13.8 } : null}
+        month={form.target_month}
+        onBack={() => setSubPage(null)}
+      />
+    )
+  }
+
+  // ── Normal layout ──
   return (
     <div style={{ minHeight:'100vh', background:'#f0f2f8' }}>
-      <Header activeTab={tab} onTabChange={setTab} />
+      <Header activeTab={tab} onTabChange={t => { setTab(t); setSubPage(null) }} />
 
       <main style={{ maxWidth:1280, margin:'0 auto', padding:'28px 16px' }}>
 
-        {/* Page title bar — no hero image, no emojis */}
+        {/* Page title bar */}
         <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:8,
-                      padding:'14px 20px', marginBottom:24, display:'flex',
-                      alignItems:'center', justifyContent:'space-between' }}>
+                      padding:'14px 20px', marginBottom:24,
+                      display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <div>
             <div style={{ fontWeight:700, fontSize:16, color:'#003087' }}>
-              { tab === 'analyze'   && 'Freight Analysis' }
-              { tab === 'whatif'    && 'What-If Simulation Studio' }
-              { tab === 'portintel' && 'Port Intelligence' }
+              {tab==='analyze'   && 'Freight Analysis'}
+              {tab==='whatif'    && 'What-If Simulation Studio'}
+              {tab==='portintel' && 'Port Intelligence'}
             </div>
             <div style={{ fontSize:12, color:'#6b7a9e', marginTop:3 }}>
-              { tab === 'analyze'   && 'AI-powered freight forecasting, vessel selection and contract optimization' }
-              { tab === 'whatif'    && 'Simulate disruption scenarios and compute cost impact vs baseline plan' }
-              { tab === 'portintel' && 'Congestion analysis, weather risk and smart port switching — East Coast India' }
+              {tab==='analyze'   && 'AI-powered freight forecasting, vessel selection and contract optimization'}
+              {tab==='whatif'    && 'Simulate disruption scenarios and compute cost impact vs baseline plan'}
+              {tab==='portintel' && 'Congestion analysis, weather risk and smart port switching — East Coast India'}
             </div>
           </div>
           <div style={{ fontSize:11, color:'#6b7a9e', background:'#f5f7fc',
@@ -58,14 +92,22 @@ export default function App() {
 
         {/* Freight Analysis */}
         {tab === 'analyze' && (
-          <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr', gap:24, alignItems:'start' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr',
+                        gap:24, alignItems:'start' }}>
             <div style={{ position:'sticky', top:96 }}>
               <InputForm form={form} onChange={setForm} onSubmit={handleAnalyze} loading={loading} />
             </div>
             <div>
               {error   && <ErrorBanner msg={error} />}
               {loading && <LoadingCard />}
-              {result  && !loading && <ResultsPanel result={result} />}
+              {result  && !loading && (
+                <ResultsPanel
+                  result={result}
+                  onVesselClick={() => setSubPage({ type:'vessel' })}
+                  onPortClick={portId => setSubPage({ type:'port', portId })}
+                  onVesselPctChange={setVesselPct}
+                />
+              )}
               {!result && !loading && !error && <WelcomeCard />}
             </div>
           </div>
@@ -76,6 +118,12 @@ export default function App() {
       </main>
     </div>
   )
+}
+
+// Draft lookup matching datasets.py VESSELS
+const VESSEL_DRAFTS = {
+  Handymax:11.5, Supramax:12.5, Ultramax:12.8,
+  Panamax:13.5, Kamsarmax:13.8, Capesize:18.2,
 }
 
 function ErrorBanner({ msg }) {

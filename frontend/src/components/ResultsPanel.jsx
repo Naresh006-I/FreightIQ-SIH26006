@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import SummaryBanner from './cards/SummaryBanner'
 import ForecastCard  from './cards/ForecastCard'
 import SignalCard    from './cards/SignalCard'
@@ -13,19 +14,20 @@ const MONTH_MAP = {
   Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12,
 }
 
-// Vessel draft lookup (meters) — matches datasets.py VESSELS list
 const VESSEL_DRAFTS = {
   Handymax:11.5, Supramax:12.5, Ultramax:12.8,
-  Panamax:13.5, Kamsarmax:13.8, Capesize:18.2,
+  Panamax:13.5,  Kamsarmax:13.8, Capesize:18.2,
 }
 
-export default function ResultsPanel({ result }) {
+export default function ResultsPanel({ result, onVesselClick, onPortClick, onVesselPctChange }) {
   const {
     input_summary, freight_forecast, market_signal,
     vessel_recommendation, port_compatibility,
     contract_recommendation, risk_assessment,
     savings_opportunity, seasonal_context, economic_snapshot,
   } = result
+
+  const month = MONTH_MAP[input_summary.period?.split(' ')[0]] || 11
 
   return (
     <div>
@@ -40,17 +42,19 @@ export default function ResultsPanel({ result }) {
         <RiskCard     data={risk_assessment} />
       </div>
 
-      {/* Route Map — full width */}
+      {/* Route Map — full width, with navigation callbacks */}
       <div style={{ marginBottom:16 }}>
         <RouteMap
           originId={input_summary.origin_id}
           destPortId={input_summary.port_id}
-          month={MONTH_MAP[input_summary.period?.split(' ')[0]] || 11}
+          month={month}
           vesselData={{
             ...vessel_recommendation,
             cargo_mt: input_summary.quantity_mt,
             draft_m:  VESSEL_DRAFTS[vessel_recommendation.vessel_type] || 13.8,
           }}
+          onVesselClick={onVesselClick}
+          onPortClick={onPortClick}
         />
       </div>
 
@@ -60,7 +64,8 @@ export default function ResultsPanel({ result }) {
       <div className="card" style={{ padding:'14px 20px', marginTop:16 }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10 }}>
           <div style={{ flex:1, height:1, background:'#dde3f4' }} />
-          <span style={{ fontSize:10, fontWeight:700, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.1em' }}>
+          <span style={{ fontSize:10, fontWeight:700, color:'#6b7a9e',
+                         textTransform:'uppercase', letterSpacing:'0.1em' }}>
             Economic Indicators — Government of India
           </span>
           <div style={{ flex:1, height:1, background:'#dde3f4' }} />
