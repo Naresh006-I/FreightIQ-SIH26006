@@ -48,13 +48,6 @@ function generateQueue(portId, month) {
   }))
 }
 
-// Transfer records — simulated divert history
-const TRANSFER_RECORDS = [
-  { date:'2026-09-03', vessel:'MV Coal Star', from:'INHAL', to:'INDMA', reason:'Draft excess (14.2m > 8.5m)', status:'DIVERTED' },
-  { date:'2026-09-01', vessel:'MV Panamax King', from:'INGPL', to:'INVTZ', reason:'Berth congestion', status:'DIVERTED' },
-  { date:'2026-08-28', vessel:'MV Eastern Light', from:'INVTZ', to:'INGVP', reason:'Equipment maintenance', status:'DIVERTED' },
-]
-
 export default function PortDashboard({ portId, vesselData, month = 11, onBack }) {
   const port      = PORT_META[portId] || PORT_META.INPRD
   const [intel,   setIntel]   = useState(null)
@@ -367,53 +360,134 @@ export default function PortDashboard({ portId, vesselData, month = 11, onBack }
           </div>
         )}
 
-        {/* ── Port Transfer Records ── */}
+        {/* ── Nearby Port Availability (replaces Port Transfer Records) ── */}
         <div className="card" style={{ overflow:'hidden' }}>
-          <div style={{ background:'#003087', padding:'12px 20px' }}>
+          <div style={{ background:'#003087', padding:'12px 20px',
+                        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <span style={{ color:'white', fontWeight:700, fontSize:12,
                            textTransform:'uppercase', letterSpacing:'0.08em' }}>
-              Port Transfer Records — Recent Diversions
+              Nearby Port Availability — Port Compatibility Check
+            </span>
+            <span style={{ color:'#C8A84B', fontSize:11, fontWeight:600 }}>
+              {NEARBY[portId]?.length || 0} nearby ports analysed
             </span>
           </div>
-          <table style={{ width:'100%', borderCollapse:'collapse' }}>
-            <thead>
-              <tr>
-                {['Date','Vessel','From Port','To Port','Reason','Status'].map(h => (
-                  <th key={h} style={{ background:'#f5f7fc', padding:'9px 14px', textAlign:'left',
-                                       fontSize:10, fontWeight:700, color:'#6b7a9e',
-                                       textTransform:'uppercase', letterSpacing:'0.06em',
-                                       borderBottom:'1px solid #dde3f4' }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {TRANSFER_RECORDS.map((r, i) => (
-                <tr key={i} style={{ borderBottom:'1px solid #eef1fa',
-                                      background: i % 2 === 0 ? 'white' : '#fafbff' }}>
-                  <td style={{ padding:'10px 14px', fontSize:12, color:'#6b7a9e' }}>{r.date}</td>
-                  <td style={{ padding:'10px 14px', fontSize:12, fontWeight:700,
-                                color:'#003087' }}>{r.vessel}</td>
-                  <td style={{ padding:'10px 14px', fontSize:12, color:'#1a2340' }}>
-                    {PORT_META[r.from]?.name || r.from}
-                  </td>
-                  <td style={{ padding:'10px 14px', fontSize:12, fontWeight:600,
-                                color:'#1b5e20' }}>
-                    {PORT_META[r.to]?.name || r.to}
-                  </td>
-                  <td style={{ padding:'10px 14px', fontSize:11, color:'#6b7a9e' }}>{r.reason}</td>
-                  <td style={{ padding:'10px 14px' }}>
-                    <span style={{ background:'#fff8e1', color:'#e65100',
-                                    border:'1px solid #ffe082', padding:'2px 8px',
-                                    borderRadius:4, fontSize:10, fontWeight:700 }}>
-                      {r.status}
+
+          <div style={{ padding:20, display:'grid',
+                        gridTemplateColumns:'repeat(3, 1fr)', gap:16 }}>
+            {(NEARBY[portId] || []).map(nearId => {
+              const np       = PORT_META[nearId]
+              if (!np) return null
+              const npCompat = vDraft <= np.maxDraft
+              const npLight  = nearId === 'INHAL'
+              const statusColor = npCompat ? '#1b5e20' : '#b71c1c'
+              const statusBg    = npCompat ? '#e8f5e9' : '#ffebee'
+              const statusBdr   = npCompat ? '#a5d6a7' : '#ef9a9a'
+
+              // Simulated availability metrics per nearby port
+              const seed      = nearId.charCodeAt(2) + month
+              const npUtil    = 20 + (seed % 45)
+              const npWait    = (1 + (seed % 4)).toFixed(1)
+              const npVessels = 2 + (seed % 8)
+              const available = npUtil < 70
+
+              return (
+                <div key={nearId} style={{
+                  background:'white', border:`2px solid ${statusBdr}`,
+                  borderRadius:9, overflow:'hidden',
+                }}>
+                  {/* Port header */}
+                  <div style={{ background: npCompat ? '#003087' : '#b71c1c',
+                                padding:'10px 14px',
+                                display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div>
+                      <div style={{ color:'white', fontWeight:800, fontSize:13 }}>{np.name}</div>
+                      <div style={{ color:'rgba(255,255,255,0.7)', fontSize:10 }}>{np.state}</div>
+                    </div>
+                    <span style={{ background:'rgba(255,255,255,0.2)', color:'white',
+                                    fontSize:9, fontWeight:800, padding:'2px 7px',
+                                    borderRadius:3 }}>
+                      {npCompat ? 'COMPATIBLE' : 'INCOMPATIBLE'}
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+
+                  <div style={{ padding:12 }}>
+                    {/* Key stats */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:10 }}>
+                      {[
+                        { l:'Max Draft',   v:`${np.maxDraft}m`,   ok: vDraft <= np.maxDraft },
+                        { l:'Berths',      v:`${np.berths}`,       ok: true },
+                        { l:'Vessels Wait',v:`${npVessels}`,       ok: npVessels < 8 },
+                        { l:'Avg Wait',    v:`${npWait}d`,         ok: Number(npWait) < 3 },
+                      ].map(s => (
+                        <div key={s.l} style={{ background:'#f5f7fc',
+                                                 border:'1px solid #dde3f4',
+                                                 borderRadius:5, padding:'7px 10px' }}>
+                          <div style={{ fontSize:9, color:'#6b7a9e', marginBottom:2,
+                                        textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                            {s.l}
+                          </div>
+                          <div style={{ fontSize:12, fontWeight:700,
+                                         color: s.ok ? '#003087' : '#b71c1c' }}>
+                            {s.v}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Berth utilisation bar */}
+                    <div style={{ marginBottom:10 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between',
+                                    fontSize:10, marginBottom:3 }}>
+                        <span style={{ color:'#6b7a9e' }}>Berth Utilisation</span>
+                        <span style={{ fontWeight:700,
+                                        color: npUtil > 65 ? '#b71c1c' : '#1b5e20' }}>
+                          {npUtil}%
+                        </span>
+                      </div>
+                      <div style={{ background:'#e8ecf4', borderRadius:4, height:6, overflow:'hidden' }}>
+                        <div style={{ height:6, borderRadius:4,
+                                       background: npUtil > 65 ? '#d32f2f' : npUtil > 40 ? '#f57c00' : '#2e7d32',
+                                       width:`${npUtil}%`, transition:'width 0.4s' }} />
+                      </div>
+                    </div>
+
+                    {/* Availability status */}
+                    <div style={{ padding:'6px 10px', borderRadius:5, fontSize:11,
+                                   fontWeight:700, textAlign:'center',
+                                   background: available ? '#e8f5e9' : '#fff8e1',
+                                   color: available ? '#1b5e20' : '#e65100',
+                                   border:`1px solid ${available ? '#a5d6a7' : '#ffe082'}` }}>
+                      {available ? 'Available — Berths Open' : 'Limited — High Utilisation'}
+                    </div>
+
+                    {/* Compatibility note */}
+                    {npLight && (
+                      <div style={{ marginTop:8, fontSize:10, color:'#e65100',
+                                     background:'#fff8e1', border:'1px solid #ffe082',
+                                     borderRadius:4, padding:'4px 8px' }}>
+                        Lightering required at Sagar-Sandheads
+                      </div>
+                    )}
+                    {!npCompat && (
+                      <div style={{ marginTop:8, fontSize:10, color:'#b71c1c',
+                                     background:'#ffebee', border:'1px solid #ef9a9a',
+                                     borderRadius:4, padding:'4px 8px' }}>
+                        Vessel draft {vDraft}m exceeds port limit {np.maxDraft}m
+                      </div>
+                    )}
+                    {npCompat && (
+                      <div style={{ marginTop:8, fontSize:10, color:'#1b5e20',
+                                     background:'#e8f5e9', border:'1px solid #a5d6a7',
+                                     borderRadius:4, padding:'4px 8px' }}>
+                        Draft compatible — can accommodate {vType}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
       </div>

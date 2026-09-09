@@ -29,20 +29,25 @@ const MONTHS = [
   {v:9,l:'September'},{v:10,l:'October'},{v:11,l:'November'},{v:12,l:'December'},
 ]
 
-// Map CSV/Excel column names to form fields
+// Map CSV/Excel column names to form fields — handles exact Excel headers from SAIL template
 const CSV_FIELD_MAP = {
-  commodity:       ['commodity','commodity_type','cargo_type'],
-  quantity_mt:     ['quantity_mt','quantity','qty','metric_tonnes','quantity_metric_tonnes'],
-  origin_id:       ['origin_id','origin','origin_country'],
-  port_id:         ['port_id','destination_port','port','destination'],
-  target_month:    ['target_month','month','delivery_month'],
+  commodity:       ['commodity','commodity type','commodity_type','cargo_type','cargo type'],
+  quantity_mt:     ['quantity_mt','quantity','qty','metric_tonnes','quantity (metric tonnes)','quantity(metric tonnes)','quantity metric tonnes'],
+  origin_id:       ['origin_id','origin','origin_country','origin country'],
+  port_id:         ['port_id','destination_port','port','destination','destination port'],
+  target_month:    ['target_month','month','delivery_month','required delivery period','required delivery month'],
   target_year:     ['target_year','year','delivery_year'],
-  contract_months: ['contract_months','contract_duration','contract'],
+  contract_months: ['contract_months','contract_duration','contract','contract duration (months)','contract duration','contract(months)'],
+  // extra columns we can safely ignore
+  destination_state: ['destination_state','destination state','state'],
+  max_draft:         ['maximum draft (m)','max draft','maximum draft','draft'],
 }
 
 const COMMODITY_ALIASES = {
-  'coal':'thermal_coal','thermal coal':'thermal_coal','coking coal':'coking_coal',
-  'iron ore':'iron_ore','iron':'iron_ore','limestone':'limestone','bauxite':'bauxite',
+  'coal':'thermal_coal','thermal coal':'thermal_coal','thermal_coal':'thermal_coal',
+  'coking coal':'coking_coal','coking_coal':'coking_coal',
+  'iron ore':'iron_ore','iron_ore':'iron_ore','iron':'iron_ore',
+  'limestone':'limestone','bauxite':'bauxite',
 }
 
 const ORIGIN_ALIASES = {
@@ -58,31 +63,92 @@ const PORT_ALIASES = {
   'gopalpur':'INGPL','ingpl':'INGPL',
   'dhamra':'INDMA','indma':'INDMA',
   'haldia':'INHAL','inhal':'INHAL',
+  'chennai':'INCHP','inchp':'INCHP',
+}
+
+// Month name → number
+const MONTH_NAME_MAP = {
+  january:1,february:2,march:3,april:4,may:5,june:6,
+  july:7,august:8,september:9,october:10,november:11,december:12,
+  jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
+}
+
+function parseDeliveryPeriod(val) {
+  // Handles: "November 2026" | "Nov 2026" | "11" | "11/2026"
+  if (!val) return {}
+  const s = val.trim()
+  // "November 2026" or "Nov 2026"
+  const mMatch = s.match(/^([A-Za-z]+)\s+(\d{4})$/)
+  if (mMatch) {
+    const mn = MONTH_NAME_MAP[mMatch[1].toLowerCase()]
+    const yr = Number(mMatch[2])
+    if (mn && yr) return { target_month: mn, target_year: yr }
+  }
+  // "2026-11" or "11/2026"
+  const numMatch = s.match(/^(\d{1,2})[\/\-](\d{4})$/)
+  if (numMatch) return { target_month: Number(numMatch[1]), target_year: Number(numMatch[2]) }
+  // pure number (month)
+  if (/^\d+$/.test(s)) return { target_month: Number(s) }
+  return {}
 }
 
 function parseCSVRow(headers, values) {
+  // Build case-insensitive row map
   const row = {}
   headers.forEach((h, i) => { row[h.trim().toLowerCase()] = (values[i] || '').trim() })
+
   const out = {}
-  for (const [field, aliases] of Object.entries(CSV_FIELD_MAP)) {
-    for (const alias of aliases) {
-      if (row[alias] !== undefined) {
-        out[field] = row[alias]
-        break
-      }
+
+  // commodity
+  for (const alias of CSV_FIELD_MAP.commodity) {
+    if (row[alias] !== undefined) { out.commodity = row[alias]; break }
+  }
+
+  // quantity
+  for (const alias of CSV_FIELD_MAP.quantity_mt) {
+    if (row[alias] !== undefined) { out.quantity_mt = row[alias]; break }
+  }
+
+  // origin
+  for (const alias of CSV_FIELD_MAP.origin_id) {
+    if (row[alias] !== undefined) { out.origin_id = row[alias]; break }
+  }
+
+  // port
+  for (const alias of CSV_FIELD_MAP.port_id) {
+    if (row[alias] !== undefined) { out.port_id = row[alias]; break }
+  }
+
+  // delivery period — may contain "November 2026" as single field
+  for (const alias of CSV_FIELD_MAP.target_month) {
+    if (row[alias] !== undefined) {
+      const parsed = parseDeliveryPeriod(row[alias])
+      if (parsed.target_month) { out.target_month = parsed.target_month; out.target_year = parsed.target_year || 2026 }
+      else out.target_month = row[alias]
+      break
     }
   }
+  // year as separate column
+  for (const alias of CSV_FIELD_MAP.target_year) {
+    if (row[alias] !== undefined && !out.target_year) { out.target_year = row[alias]; break }
+  }
+
+  // contract months
+  for (const alias of CSV_FIELD_MAP.contract_months) {
+    if (row[alias] !== undefined) { out.contract_months = row[alias]; break }
+  }
+
   // Normalise values
-  if (out.commodity) out.commodity  = COMMODITY_ALIASES[out.commodity.toLowerCase()] || out.commodity.toLowerCase().replace(' ','_')
-  if (out.origin_id) out.origin_id  = ORIGIN_ALIASES[out.origin_id.toLowerCase()] || out.origin_id.toUpperCase()
-  if (out.port_id)   out.port_id    = PORT_ALIASES[out.port_id.toLowerCase()] || out.port_id.toUpperCase()
-  if (out.quantity_mt)     out.quantity_mt     = Number(out.quantity_mt)
-  if (out.target_month)    out.target_month    = Number(out.target_month)
-  if (out.target_year)     out.target_year     = Number(out.target_year)
-  if (out.contract_months) out.contract_months = Number(out.contract_months)
+  if (out.commodity)    out.commodity    = COMMODITY_ALIASES[out.commodity.toLowerCase()] || out.commodity.toLowerCase().replace(/\s+/g,'_')
+  if (out.origin_id)    out.origin_id    = ORIGIN_ALIASES[out.origin_id.toLowerCase()] || out.origin_id.toUpperCase()
+  if (out.port_id)      out.port_id      = PORT_ALIASES[out.port_id.toLowerCase()] || out.port_id.toUpperCase()
+  if (out.quantity_mt)  out.quantity_mt  = Number(String(out.quantity_mt).replace(/,/g,''))
+  if (out.target_month) out.target_month = Number(out.target_month)
+  if (out.target_year)  out.target_year  = Number(out.target_year)
+  if (out.contract_months) out.contract_months = Number(String(out.contract_months).replace(/[^0-9]/g,''))
+
   return out
 }
-
 const L = ({ children }) => (
   <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#003087',
                   textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>
@@ -103,6 +169,11 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
   const fileRef   = useRef(null)
   const [fileMsg, setFileMsg] = useState(null)
   const [fileErr, setFileErr] = useState(null)
+  // Keep latest form + onSubmit in refs so the async file reader can access them
+  const formRef     = useRef(form)
+  const onSubmitRef = useRef(onSubmit)
+  useEffect(() => { formRef.current     = form     }, [form])
+  useEffect(() => { onSubmitRef.current = onSubmit }, [onSubmit])
 
   // ── CSV / Excel file parser ─────────────────────────────────────────────
   function handleFile(e) {
@@ -119,22 +190,51 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
     const reader = new FileReader()
     reader.onload = ev => {
       try {
-        let text = ''
-        if (ext === 'csv') {
-          text = ev.target.result
-        } else {
-        setFileErr('Excel files: please save as CSV first, or we handle basic XLSX below.')
-          text = ev.target.result
-        }
+        const text = ev.target.result
 
-        const lines   = text.split(/\r?\n/).filter(l => l.trim())
-        if (lines.length < 2) {
+        // Split into lines, handle both comma and tab separators
+        const allLines = text.split(/\r?\n/)
+        const nonEmpty = allLines.map(l => l.trim()).filter(l => l)
+
+        if (nonEmpty.length < 2) {
           setFileErr('This is not a valid dataset. File must have a header row and at least one data row.')
           return
         }
-        const headers = lines[0].split(',')
-        const values  = lines[1].split(',')
-        const parsed  = parseCSVRow(headers, values)
+
+        // Auto-detect separator: tab or comma
+        const detectSep = (line) => line.includes('\t') ? '\t' : ','
+
+        // Find the header row — scan until we find a row with recognisable column names
+        const knownHeaders = [
+          'commodity','commodity type','quantity','origin','destination',
+          'port','month','year','contract','draft'
+        ]
+        let headerIdx = 0
+        for (let i = 0; i < Math.min(nonEmpty.length - 1, 5); i++) {
+          const sep  = detectSep(nonEmpty[i])
+          const cols = nonEmpty[i].split(sep).map(c => c.trim().toLowerCase().replace(/['"]/g,''))
+          const hits = cols.filter(c => knownHeaders.some(k => c.includes(k)))
+          if (hits.length >= 2) { headerIdx = i; break }
+        }
+
+        const sep     = detectSep(nonEmpty[headerIdx])
+        const headers = nonEmpty[headerIdx].split(sep).map(c => c.trim().replace(/['"]/g,''))
+
+        // Find the first data row after the header (skip blank/separator lines)
+        let dataIdx = headerIdx + 1
+        while (dataIdx < nonEmpty.length) {
+          const cols = nonEmpty[dataIdx].split(sep).map(c => c.trim())
+          if (cols.some(c => c && c !== ',')) break
+          dataIdx++
+        }
+
+        if (dataIdx >= nonEmpty.length) {
+          setFileErr('This is not a valid dataset. No data row found after header.')
+          return
+        }
+
+        const values = nonEmpty[dataIdx].split(sep).map(c => c.trim().replace(/['"]/g,''))
+        const parsed = parseCSVRow(headers, values)
 
         if (Object.keys(parsed).length === 0) {
           setFileErr('This is not a valid dataset. Could not recognise any column headers.')
@@ -142,13 +242,18 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
         }
 
         onChange(prev => ({ ...prev, ...parsed }))
-        setFileMsg(`Loaded from ${file.name} — ${Object.keys(parsed).length} fields mapped successfully.`)
+        const fieldCount = Object.keys(parsed).length
+        setFileMsg(`Loaded from ${file.name} — ${fieldCount} fields mapped. Running analysis…`)
+
+        // Auto-run analysis with merged form data
+        const mergedForm = { ...formRef.current, ...parsed }
+        // Small delay so React state settles before submission
+        setTimeout(() => { onSubmitRef.current?.(mergedForm) }, 120)
       } catch (err) {
-        setFileErr('Failed to parse file: ' + err.message)
+        setFileErr('This is not a valid dataset. ' + err.message)
       }
     }
     reader.readAsText(file)
-    // Reset input so same file can be re-uploaded
     e.target.value = ''
   }
 

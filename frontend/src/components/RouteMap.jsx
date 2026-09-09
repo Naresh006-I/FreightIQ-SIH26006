@@ -67,6 +67,13 @@ function injectCSS() {
     .v-blink { animation:vBlink 1.9s ease-in-out infinite }
     .p-pulse { position:absolute;top:-5px;left:-5px;width:24px;height:24px;border-radius:50%;
                background:rgba(211,47,47,.25);animation:pPulse 1.9s infinite;pointer-events:none }
+    /* When only the map div goes fullscreen via browser native API */
+    .sail-map-container:fullscreen,
+    .sail-map-container:-webkit-full-screen,
+    .sail-map-container:-moz-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+    }
   `
   document.head.appendChild(s)
 }
@@ -109,155 +116,203 @@ function originIco() {
 
 // ── Score bar helper ──────────────────────────────────────────────────────────
 function ScoreBar({ score, color }) {
-  const bg = score >= 70 ? '#1b5e20' : score >= 45 ? '#e65100' : '#b71c1c'
+  const bg = color || (score >= 70 ? '#1b5e20' : score >= 45 ? '#e65100' : '#b71c1c')
   return (
     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
       <div style={{ flex:1, background:'#e8ecf4', borderRadius:3, height:6, overflow:'hidden' }}>
-        <div style={{ height:6, background: color || bg, borderRadius:3, width:`${score}%`, transition:'width 0.4s' }} />
+        <div style={{ height:6, background:bg, borderRadius:3, width:`${score}%`, transition:'width 0.4s' }} />
       </div>
-      <span style={{ fontSize:10, fontWeight:700, color: color || bg, width:26, textAlign:'right' }}>{score}</span>
+      <span style={{ fontSize:10, fontWeight:700, color:bg, width:26, textAlign:'right' }}>{score}</span>
     </div>
   )
 }
 
-// ── Route Picker Panel ────────────────────────────────────────────────────────
-function RoutePicker({ routes, selectedRoute, recommendedRoute, onSelect, recommendation, savingInr }) {
+// ── Route Tab Buttons (shown above or below map) ──────────────────────────────
+function RouteTabs({ routes, selectedRoute, recommendedRoute, onSelect }) {
   if (!routes || routes.length === 0) return null
+  return (
+    <div style={{ display:'flex', gap:8, padding:'10px 16px',
+                  background:'white', borderBottom:'1px solid #dde3f4', flexShrink:0 }}>
+      <span style={{ fontSize:11, color:'#6b7a9e', alignSelf:'center',
+                     fontWeight:600, marginRight:4, textTransform:'uppercase',
+                     letterSpacing:'0.05em' }}>
+        Select Route:
+      </span>
+      {routes.map(r => {
+        const isSelected  = r.route_id === selectedRoute
+        const isRec       = r.route_id === recommendedRoute
+        const color       = ROUTE_COLORS[r.route_id] || '#003087'
+        return (
+          <button key={r.route_id} onClick={() => onSelect(r.route_id)}
+            style={{
+              display:'flex', alignItems:'center', gap:7,
+              padding:'7px 16px', borderRadius:6, cursor:'pointer', fontSize:12,
+              fontWeight: isSelected ? 700 : 500,
+              background: isSelected ? color : 'white',
+              color:      isSelected ? 'white' : '#1a2340',
+              border:     isSelected ? `2px solid ${color}` : `1px solid ${color}40`,
+              transition: 'all 0.15s',
+            }}>
+            {/* Color line indicator */}
+            <div style={{
+              width:16, height:3, borderRadius:2,
+              background: r.route_id === 'R1' ? (isSelected ? 'white' : color) : 'transparent',
+              borderTop: r.route_id === 'R2' ? `2px dashed ${isSelected ? 'white' : color}` :
+                         r.route_id === 'R3' ? `2px dotted ${isSelected ? 'white' : color}` : 'none',
+            }} />
+            <span>{r.route_id}</span>
+            <span style={{ opacity:0.8 }}>{r.name.split(' (')[0].split(' via ')[0].replace('Via ','').split(' ')[0]}</span>
+            {isRec && (
+              <span style={{ fontSize:9, background: isSelected ? 'rgba(255,255,255,0.25)' : '#C8A84B',
+                              color: isSelected ? 'white' : '#003087',
+                              padding:'1px 5px', borderRadius:3, fontWeight:800 }}>
+                AI
+              </span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── AI Route Analysis Sub-Panel (shown below map when route is selected) ──────
+function RouteAnalysisPanel({ route, recommendedRoute, savingInr }) {
+  if (!route) return null
+  const color  = ROUTE_COLORS[route.route_id] || '#003087'
+  const isRec  = route.route_id === recommendedRoute
+
+  const riskLevelColor = route.risk_score < 25 ? '#1b5e20' : route.risk_score < 55 ? '#e65100' : '#b71c1c'
+  const riskLabel      = route.risk_score < 25 ? 'LOW' : route.risk_score < 55 ? 'MEDIUM' : 'HIGH'
 
   return (
-    <div style={{
-      position:'absolute', top:12, right:12, zIndex:1000, width:320,
-      background:'white', border:'1px solid #dde3f4', borderRadius:9,
-      boxShadow:'0 4px 20px rgba(0,48,135,0.18)', overflow:'hidden',
-    }}>
-      {/* Panel header */}
-      <div style={{ background:'#003087', padding:'10px 14px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+    <div style={{ borderTop:'1px solid #dde3f4', background:'#f8f9fd', flexShrink:0 }}>
+      {/* Section header */}
+      <div style={{ background: color, padding:'10px 16px',
+                    display:'flex', alignItems:'center', justifyContent:'space-between' }}>
         <div>
-          <div style={{ color:'white', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:'0.07em' }}>
-            AI Route Optimization
-          </div>
-          <div style={{ color:'rgba(255,255,255,0.65)', fontSize:10, marginTop:2 }}>
-            {routes.length} routes analysed
-          </div>
-        </div>
-        <div style={{ background:'#C8A84B', color:'#003087', fontSize:10, fontWeight:800,
-                      padding:'3px 8px', borderRadius:4, textTransform:'uppercase' }}>
-          AI Pick: {recommendedRoute}
-        </div>
-      </div>
-
-      {/* AI recommendation text */}
-      <div style={{ padding:'8px 12px', background:'#eff6ff', borderBottom:'1px solid #dde3f4',
-                    fontSize:11, color:'#003087', lineHeight:1.5 }}>
-        {recommendation}
-        {savingInr > 0 && (
-          <span style={{ display:'block', fontWeight:700, color:'#1b5e20', marginTop:3 }}>
-            Saving vs worst route: Rs.{(savingInr/1e5).toFixed(1)} Lakhs
+          <span style={{ color:'white', fontWeight:800, fontSize:13 }}>
+            Route {route.route_id} — {route.name}
           </span>
-        )}
+          {isRec && (
+            <span style={{ marginLeft:10, background:'#C8A84B', color:'#003087',
+                            fontSize:9, fontWeight:800, padding:'2px 7px', borderRadius:3 }}>
+              AI RECOMMENDED
+            </span>
+          )}
+        </div>
+        <span style={{ color:'rgba(255,255,255,0.8)', fontSize:11 }}>
+          AI Route Optimization Analysis
+        </span>
       </div>
 
-      {/* Route cards */}
-      <div style={{ padding:10, display:'flex', flexDirection:'column', gap:8 }}>
-        {routes.map(r => {
-          const isSelected  = r.route_id === selectedRoute
-          const isRecommended = r.route_id === recommendedRoute
-          const color = ROUTE_COLORS[r.route_id] || '#003087'
-          return (
-            <div key={r.route_id}
-              onClick={() => onSelect(r.route_id)}
-              style={{
-                border: isSelected ? `2px solid ${color}` : '1px solid #dde3f4',
-                borderRadius:7, padding:'10px 12px', cursor:'pointer',
-                background: isSelected ? `${color}08` : 'white',
-                transition:'all 0.15s',
-              }}>
-              {/* Route header */}
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
-                {/* Color dot */}
-                <div style={{ width:10, height:10, borderRadius:'50%', background:color,
-                              border:'2px solid white', boxShadow:`0 0 0 2px ${color}`, flexShrink:0 }} />
-                <span style={{ fontWeight:700, fontSize:12, color:'#1a2340', flex:1 }}>
-                  {r.route_id} — {r.name.split(' (')[0]}
-                </span>
-                {isRecommended && (
-                  <span style={{ background:'#C8A84B', color:'#003087', fontSize:9,
-                                  fontWeight:800, padding:'1px 6px', borderRadius:3 }}>
-                    AI BEST
-                  </span>
-                )}
-              </div>
+      <div style={{ padding:'16px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:14 }}>
 
-              {/* Key metrics row */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:8 }}>
-                {[
-                  { l:'Days',    v:`${r.sea_days}d`,   hi: r.sea_days <= routes[0]?.sea_days },
-                  { l:'Cost',    v:`$${(r.total_cost_usd/1000).toFixed(0)}k` },
-                  { l:'Risk',    v:r.risk_score,        lo: r.risk_score <= 20 },
-                ].map(m => (
-                  <div key={m.l} style={{ background:'#f5f7fc', borderRadius:5, padding:'5px 6px', textAlign:'center' }}>
-                    <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase' }}>{m.l}</div>
-                    <div style={{ fontSize:12, fontWeight:800,
-                                   color: m.hi ? '#1b5e20' : m.lo ? '#1b5e20' : '#1a2340' }}>{m.v}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Score bars */}
-              <div style={{ display:'flex', flexDirection:'column', gap:3 }}>
-                {[
-                  { l:'Time',   s:r.time_score,     c:'#003087' },
-                  { l:'Cost',   s:r.cost_score,     c:'#1565c0' },
-                  { l:'Safety', s:r.safety_score,   c:'#1b5e20' },
-                ].map(b => (
-                  <div key={b.l} style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ fontSize:9, color:'#6b7a9e', width:36 }}>{b.l}</span>
-                    <ScoreBar score={b.s} color={b.c} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Composite score */}
-              <div style={{ marginTop:7, display:'flex', justifyContent:'space-between',
-                            alignItems:'center', paddingTop:6, borderTop:'1px solid #eef1fa' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                  <span style={{ fontSize:9, color:'#6b7a9e' }}>Composite</span>
-                  <ScoreBar score={r.composite_score} color={color} />
-                </div>
-                <span style={{ fontSize:10, color:'#6b7a9e' }}>
-                  {r.traffic_density} traffic
-                </span>
-              </div>
-
-              {/* Chokepoints */}
-              {r.chokepoints.length > 0 && (
-                <div style={{ marginTop:5, fontSize:10, color:'#e65100',
-                              background:'#fff8e1', padding:'3px 7px',
-                              borderRadius:4, border:'1px solid #ffe082' }}>
-                  Chokepoints: {r.chokepoints.join(', ')}
-                </div>
-              )}
-
-              {/* Notes */}
-              <div style={{ marginTop:5, fontSize:10, color:'#6b7a9e', lineHeight:1.5 }}>
-                {r.notes}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Legend */}
-      <div style={{ padding:'8px 12px', borderTop:'1px solid #eef1fa',
-                    display:'flex', gap:14, flexWrap:'wrap', background:'#f8f9fd' }}>
-        {Object.entries(ROUTE_COLORS).map(([id, c]) => (
-          <div key={id} style={{ display:'flex', alignItems:'center', gap:5 }}>
-            <div style={{ width:20, height:3, background:c, borderRadius:2,
-                          border: id === 'R2' ? '1px dashed' : id === 'R3' ? '1px dotted' : 'none' }} />
-            <span style={{ fontSize:9, color:'#6b7a9e' }}>{id}</span>
+        {/* KPI 1 — Transit */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7,
+                      padding:'12px 14px', borderLeft:`4px solid ${color}` }}>
+          <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:5 }}>Transit Time</div>
+          <div style={{ fontSize:22, fontWeight:900, color }}>
+            {route.sea_days}<span style={{ fontSize:12, fontWeight:400, color:'#6b7a9e' }}> days</span>
           </div>
-        ))}
-        <span style={{ fontSize:9, color:'#6b7a9e', marginLeft:'auto' }}>Click route to select</span>
+          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>
+            {route.distance_nm.toLocaleString()} NM total
+          </div>
+        </div>
+
+        {/* KPI 2 — Cost */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7,
+                      padding:'12px 14px', borderLeft:'4px solid #1565c0' }}>
+          <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:5 }}>Total Cost</div>
+          <div style={{ fontSize:18, fontWeight:900, color:'#003087' }}>
+            ${(route.total_cost_usd/1000).toFixed(0)}k
+          </div>
+          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>
+            Rs.{(route.total_cost_inr/1e5).toFixed(1)} Lakhs
+          </div>
+        </div>
+
+        {/* KPI 3 — Risk */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7,
+                      padding:'12px 14px', borderLeft:`4px solid ${riskLevelColor}` }}>
+          <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:5 }}>Risk Level</div>
+          <div style={{ fontSize:22, fontWeight:900, color:riskLevelColor }}>{riskLabel}</div>
+          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>Score: {route.risk_score}/100</div>
+        </div>
+
+        {/* KPI 4 — Composite */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7,
+                      padding:'12px 14px', borderLeft:'4px solid #C8A84B' }}>
+          <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:5 }}>AI Score</div>
+          <div style={{ fontSize:22, fontWeight:900, color:'#003087' }}>
+            {route.composite_score}<span style={{ fontSize:12, color:'#6b7a9e' }}>/100</span>
+          </div>
+          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>Composite (T+C+S)</div>
+        </div>
+      </div>
+
+      {/* Score breakdown + details */}
+      <div style={{ padding:'0 16px 16px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+
+        {/* Score bars */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7, padding:'14px' }}>
+          <div style={{ fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:12 }}>AI Score Breakdown</div>
+          {[
+            { l:'Time Efficiency',  s:route.time_score,     c:'#003087' },
+            { l:'Cost Efficiency',  s:route.cost_score,     c:'#1565c0' },
+            { l:'Safety / Risk',    s:route.safety_score,   c:'#1b5e20' },
+            { l:'Composite Score',  s:route.composite_score,c: color },
+          ].map(b => (
+            <div key={b.l} style={{ marginBottom:9 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:11,
+                            marginBottom:3, color:'#1a2340' }}>
+                <span>{b.l}</span>
+                <span style={{ fontWeight:700, color:b.c }}>{b.s}/100</span>
+              </div>
+              <ScoreBar score={b.s} color={b.c} />
+            </div>
+          ))}
+        </div>
+
+        {/* Route details */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:7, padding:'14px' }}>
+          <div style={{ fontSize:10, fontWeight:700, color:'#003087', textTransform:'uppercase',
+                        letterSpacing:'0.07em', marginBottom:12 }}>Route Details</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+            {[
+              { l:'Chokepoints',      v: route.chokepoints.length ? route.chokepoints.join(', ') : 'None' },
+              { l:'Traffic Density',  v: route.traffic_density },
+              { l:'Route Type',       v: route.route_type.replace('_',' ') },
+              { l:'Voyage Cost',      v: `$${(route.voyage_cost_usd/1000).toFixed(0)}k` },
+              { l:'Freight Cost',     v: `$${(route.freight_cost_usd/1000).toFixed(0)}k` },
+              { l:'INR Total',        v: `Rs.${(route.total_cost_inr/1e5).toFixed(1)}L` },
+            ].map(s => (
+              <div key={s.l} style={{ background:'#f5f7fc', borderRadius:5, padding:'8px 10px' }}>
+                <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase',
+                              letterSpacing:'0.06em', marginBottom:3 }}>{s.l}</div>
+                <div style={{ fontSize:11, fontWeight:700, color:'#003087' }}>{s.v}</div>
+              </div>
+            ))}
+          </div>
+          {/* Notes */}
+          <div style={{ marginTop:10, fontSize:11, color:'#6b7a9e', lineHeight:1.6,
+                        background:'#eff6ff', padding:'8px 10px', borderRadius:5,
+                        border:'1px solid #c3d8f5' }}>
+            {route.notes}
+          </div>
+          {savingInr > 0 && (
+            <div style={{ marginTop:8, fontSize:11, fontWeight:700, color:'#1b5e20',
+                          background:'#e8f5e9', padding:'6px 10px', borderRadius:5,
+                          border:'1px solid #a5d6a7' }}>
+              Saving vs worst route: Rs.{(savingInr/1e5).toFixed(1)} Lakhs
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -318,12 +373,21 @@ export default function RouteMap({
       .finally(() => setRouteLoading(false))
   }, [originId, destPortId, month])
 
-  // ── Toggle fullscreen ───────────────────────────────────────────────────
+  // ── Map-only fullscreen (native browser Fullscreen API on the map div) ──
   const toggleFullscreen = useCallback(() => {
-    setFullscreen(f => {
-      setTimeout(() => mapObj.current?.invalidateSize(), 60)
-      return !f
-    })
+    const el = mapDiv.current
+    if (!el) return
+    if (!document.fullscreenElement) {
+      el.requestFullscreen?.()
+        .then(() => { setTimeout(() => mapObj.current?.invalidateSize(), 60) })
+        .catch(() => {
+          // Fallback: expand map div height to fill viewport within card
+          setFullscreen(f => { setTimeout(() => mapObj.current?.invalidateSize(), 60); return !f })
+        })
+    } else {
+      document.exitFullscreen?.()
+        .then(() => { setTimeout(() => mapObj.current?.invalidateSize(), 60) })
+    }
   }, [])
 
   // ── Init map ────────────────────────────────────────────────────────────
@@ -478,12 +542,7 @@ export default function RouteMap({
   const selRouteObj = routes.find(r => r.route_id === selectedRoute)
 
   return (
-    <div ref={containerRef} className="card"
-      style={{
-        overflow:'hidden', position:'relative',
-        ...(fullscreen ? { position:'fixed', inset:0, zIndex:9000, borderRadius:0,
-                           display:'flex', flexDirection:'column' } : {}),
-      }}>
+    <div ref={containerRef} className="card" style={{ overflow:'hidden', position:'relative' }}>
 
       {/* ── Header ── */}
       <div style={{ background:'#003087', padding:'10px 16px', flexShrink:0,
@@ -503,14 +562,16 @@ export default function RouteMap({
               {selRouteObj.route_id}: {selRouteObj.sea_days}d &nbsp;|&nbsp; ${(selRouteObj.total_cost_usd/1000).toFixed(0)}k
             </span>
           )}
-          {/* Fullscreen button */}
-          <button onClick={toggleFullscreen} title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          {/* Map-only Fullscreen button */}
+          <button onClick={toggleFullscreen}
+            title="Expand map to full screen (map only)"
             style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)',
-                     color:'white', borderRadius:5, width:28, height:28, cursor:'pointer',
-                     display:'flex', alignItems:'center', justifyContent:'center', fontSize:13 }}
+                     color:'white', borderRadius:5, padding:'4px 10px', cursor:'pointer',
+                     display:'flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600 }}
             onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,0.28)'}
             onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,0.15)'}>
-            {fullscreen ? 'X' : '[  ]'}
+            <span style={{ fontSize:14, lineHeight:1 }}>&#x2922;</span>
+            Full Map
           </button>
         </div>
       </div>
@@ -547,49 +608,50 @@ export default function RouteMap({
         </div>
       )}
 
-      {/* ── Map + Route Picker overlay ── */}
-      <div style={{ position:'relative', flex:1 }}>
-        <div ref={mapDiv} style={{ height: fullscreen ? undefined : 480, minHeight:320, width:'100%' }} />
+      {/* ── Route tab buttons ── */}
+      {routes.length > 0 && (
+        <RouteTabs
+          routes={routes}
+          selectedRoute={selectedRoute}
+          recommendedRoute={recommended}
+          onSelect={setSelectedRoute}
+        />
+      )}
 
-        {/* Route picker — floating panel over map */}
-        {routes.length > 0 && (
-          <RoutePicker
-            routes={routes}
-            selectedRoute={selectedRoute}
-            recommendedRoute={recommended}
-            onSelect={setSelectedRoute}
-            recommendation={routeNote}
-            savingInr={savingInr}
-          />
-        )}
+      {/* ── Map + NO floating overlay ── */}
+      <div style={{ position:'relative', flex:1 }}>
+        <div ref={mapDiv} className="sail-map-container"
+             style={{ height: fullscreen ? undefined : 400, minHeight:300, width:'100%' }} />
       </div>
 
       {/* ── Route summary bar ── */}
-      <div style={{ padding:'11px 16px', background:'#f8f9fd', borderTop:'1px solid #dde3f4',
-                    flexShrink:0, display:'flex', flexWrap:'wrap', gap:'6px 32px' }}>
+      <div style={{ padding:'9px 16px', background:'#f8f9fd', borderTop:'1px solid #dde3f4',
+                    flexShrink:0, display:'flex', flexWrap:'wrap', gap:'6px 28px' }}>
         {selRouteObj ? [
           { l:'Selected Route', v:`${selRouteObj.route_id} — ${selRouteObj.name.split(' (')[0]}` },
           { l:'Distance',       v:`${selRouteObj.distance_nm.toLocaleString()} NM` },
-          { l:'Transit Time',   v:`${selRouteObj.sea_days} days` },
-          { l:'Total Cost',     v:`$${(selRouteObj.total_cost_usd/1000).toFixed(0)}k (Rs.${(selRouteObj.total_cost_inr/1e5).toFixed(1)}L)` },
-          { l:'Risk Score',     v:`${selRouteObj.risk_score}/100` },
+          { l:'Transit',        v:`${selRouteObj.sea_days} days` },
+          { l:'Cost',           v:`$${(selRouteObj.total_cost_usd/1000).toFixed(0)}k (Rs.${(selRouteObj.total_cost_inr/1e5).toFixed(1)}L)` },
+          { l:'Risk',           v:`${selRouteObj.risk_score}/100` },
           { l:'Chokepoints',    v: selRouteObj.chokepoints.length ? selRouteObj.chokepoints.join(', ') : 'None' },
         ].map(s => (
           <div key={s.l}>
             <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.l}</div>
-            <div style={{ fontSize:12, fontWeight:600, color:'#003087', marginTop:1 }}>{s.v}</div>
+            <div style={{ fontSize:11, fontWeight:600, color:'#003087', marginTop:1 }}>{s.v}</div>
           </div>
-        )) : [
-          { l:'Origin',       v: origInfo?.name || originId },
-          { l:'Destination',  v: destPort?.name || destPortId },
-          { l:'Distance',     v: DIST[originId] || 'N/A' },
-        ].map(s => (
-          <div key={s.l}>
-            <div style={{ fontSize:9, color:'#6b7a9e', textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.l}</div>
-            <div style={{ fontSize:12, fontWeight:600, color:'#003087', marginTop:1 }}>{s.v}</div>
-          </div>
-        ))}
+        )) : (
+          <div style={{ fontSize:11, color:'#6b7a9e' }}>Select a route above to see details</div>
+        )}
       </div>
+
+      {/* ── AI Route Analysis Sub-Panel (below map, updates on route select) ── */}
+      {selRouteObj && (
+        <RouteAnalysisPanel
+          route={selRouteObj}
+          recommendedRoute={recommended}
+          savingInr={savingInr}
+        />
+      )}
     </div>
   )
 }
@@ -604,9 +666,11 @@ function LegItem({ color, border, label, pulse, dash }) {
                         background:'rgba(211,47,47,0.2)', animation:'pPulse 1.9s infinite' }} />
         )}
         {dash ? (
-          <div style={{ width:20, height:3, background:color, borderRadius:1, marginTop:3,
-                        borderTop: dash ? `2px ${dash.includes('8') ? 'dashed' : 'dotted'} ${color}` : 'none',
-                        background:'transparent' }} />
+          <div style={{
+            width:20, height:3, borderRadius:1, marginTop:3,
+            background: 'transparent',
+            borderTop: `2px ${dash.includes('8') ? 'dashed' : 'dotted'} ${color}`,
+          }} />
         ) : (
           <div style={{ width:14, height:14, borderRadius:'50%', background: color,
                         border: border ? `2px solid ${border}` : '1px solid rgba(0,0,0,0.12)',

@@ -34,8 +34,7 @@ export default function PortCard({ data }) {
             <div style={{ fontSize:11, color:'#6b7a9e', marginTop:2 }}>{berths_available} Berths · East Coast India</div>
           </div>
           <div style={{ ...badgeStyle, padding:'5px 12px', borderRadius:5, fontSize:12, fontWeight:700 }}>
-            {status_color === 'green' ? 'Compatible' : status_color === 'yellow' ? 'Warning' : 'Incompatible'}&nbsp;
-            {status.split(' ')[0]}
+            {status_color === 'green' ? 'Compatible' : status_color === 'yellow' ? 'Warning' : 'Incompatible'}
           </div>
         </div>
 
