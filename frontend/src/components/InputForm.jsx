@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const COMMODITIES = [
   { id:'thermal_coal', label:'Thermal Coal'   },
