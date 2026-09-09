@@ -7,7 +7,7 @@
 
 const TABS = [
   { id:'analyze',   label:'Freight Analysis'  },
-  { id:'whatif',    label:'What-If Studio'     },
+  { id:'whatif',    label:'What-If'            },
   { id:'portintel', label:'Port Intelligence'  },
 ]
 

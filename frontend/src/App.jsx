@@ -75,12 +75,12 @@ export default function App() {
           <div>
             <div style={{ fontWeight:700, fontSize:16, color:'#003087' }}>
               {tab==='analyze'   && 'Freight Analysis'}
-              {tab==='whatif'    && 'What-If Simulation Studio'}
+              {tab==='whatif'    && 'What-If'}
               {tab==='portintel' && 'Port Intelligence'}
             </div>
             <div style={{ fontSize:12, color:'#6b7a9e', marginTop:3 }}>
               {tab==='analyze'   && 'AI-powered freight forecasting, vessel selection and contract optimization'}
-              {tab==='whatif'    && 'Simulate disruption scenarios and compute cost impact vs baseline plan'}
+              {tab==='whatif'    && 'AI voyage disruption intelligence — weather, seasonal and technical risk with optimum re-routing'}
               {tab==='portintel' && 'Congestion analysis, weather risk and smart port switching — East Coast India'}
             </div>
           </div>
