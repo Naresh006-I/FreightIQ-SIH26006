@@ -6,6 +6,12 @@ import PortCard      from './cards/PortCard'
 import ContractCard  from './cards/ContractCard'
 import RiskCard      from './cards/RiskCard'
 import SavingsCard   from './cards/SavingsCard'
+import RouteMap      from './RouteMap'
+
+const MONTH_MAP = {
+  Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,
+  Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12,
+}
 
 export default function ResultsPanel({ result }) {
   const {
@@ -26,6 +32,15 @@ export default function ResultsPanel({ result }) {
         <PortCard     data={port_compatibility} />
         <ContractCard data={contract_recommendation} />
         <RiskCard     data={risk_assessment} />
+      </div>
+
+      {/* Route Map — full width */}
+      <div style={{ marginBottom:16 }}>
+        <RouteMap
+          originId={input_summary.origin_id}
+          destPortId={input_summary.port_id}
+          month={MONTH_MAP[input_summary.period?.split(' ')[0]] || 11}
+        />
       </div>
 
       <SavingsCard data={savings_opportunity} usdInr={economic_snapshot.usd_inr} />

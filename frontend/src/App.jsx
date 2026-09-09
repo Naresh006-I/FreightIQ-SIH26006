@@ -4,7 +4,6 @@ import InputForm        from './components/InputForm'
 import ResultsPanel     from './components/ResultsPanel'
 import WhatIfStudio     from './components/WhatIfStudio'
 import PortIntelligence from './components/PortIntelligence'
-import SailHero         from './components/SailHero'
 import { apiFetch }     from './config'
 
 const DEFAULT_FORM = {
@@ -31,53 +30,49 @@ export default function App() {
 
   return (
     <div style={{ minHeight:'100vh', background:'#f0f2f8' }}>
-      <Header activeTab={tab} onTabChange={t => { setTab(t) }} />
+      <Header activeTab={tab} onTabChange={setTab} />
 
       <main style={{ maxWidth:1280, margin:'0 auto', padding:'28px 16px' }}>
 
-        {/* ── Freight Analysis ── */}
-        {tab === 'analyze' && (
-          <>
-            <SailHero
-              title="Freight Analysis"
-              subtitle="AI-powered freight forecasting · vessel selection · contract optimization for bulk cargo procurement"
-              badge="SAIL · Ministry of Steel"
-            />
-            <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr', gap:24, alignItems:'start' }}>
-              <div style={{ position:'sticky', top:88 }}>
-                <InputForm form={form} onChange={setForm} onSubmit={handleAnalyze} loading={loading} />
-              </div>
-              <div>
-                {error   && <ErrorBanner msg={error} />}
-                {loading && <LoadingCard />}
-                {result  && !loading && <ResultsPanel result={result} />}
-                {!result && !loading && !error && <WelcomeCard />}
-              </div>
+        {/* Page title bar — no hero image, no emojis */}
+        <div style={{ background:'white', border:'1px solid #dde3f4', borderRadius:8,
+                      padding:'14px 20px', marginBottom:24, display:'flex',
+                      alignItems:'center', justifyContent:'space-between' }}>
+          <div>
+            <div style={{ fontWeight:700, fontSize:16, color:'#003087' }}>
+              { tab === 'analyze'   && 'Freight Analysis' }
+              { tab === 'whatif'    && 'What-If Simulation Studio' }
+              { tab === 'portintel' && 'Port Intelligence' }
             </div>
-          </>
+            <div style={{ fontSize:12, color:'#6b7a9e', marginTop:3 }}>
+              { tab === 'analyze'   && 'AI-powered freight forecasting, vessel selection and contract optimization' }
+              { tab === 'whatif'    && 'Simulate disruption scenarios and compute cost impact vs baseline plan' }
+              { tab === 'portintel' && 'Congestion analysis, weather risk and smart port switching — East Coast India' }
+            </div>
+          </div>
+          <div style={{ fontSize:11, color:'#6b7a9e', background:'#f5f7fc',
+                        border:'1px solid #dde3f4', padding:'4px 12px', borderRadius:4 }}>
+            SAIL · Ministry of Steel · SIH26006
+          </div>
+        </div>
+
+        {/* Freight Analysis */}
+        {tab === 'analyze' && (
+          <div style={{ display:'grid', gridTemplateColumns:'clamp(320px,30%,400px) 1fr', gap:24, alignItems:'start' }}>
+            <div style={{ position:'sticky', top:96 }}>
+              <InputForm form={form} onChange={setForm} onSubmit={handleAnalyze} loading={loading} />
+            </div>
+            <div>
+              {error   && <ErrorBanner msg={error} />}
+              {loading && <LoadingCard />}
+              {result  && !loading && <ResultsPanel result={result} />}
+              {!result && !loading && !error && <WelcomeCard />}
+            </div>
+          </div>
         )}
 
-        {tab === 'whatif' && (
-          <>
-            <SailHero
-              title="What-If Simulation Studio"
-              subtitle="Simulate disruption scenarios — terminal delays, route capacity cuts, demand spikes — and see the cost impact vs your baseline plan"
-              badge="Scenario Analysis"
-            />
-            <WhatIfStudio defaultForm={form} />
-          </>
-        )}
-
-        {tab === 'portintel' && (
-          <>
-            <SailHero
-              title="Port Intelligence"
-              subtitle="AI-powered congestion analysis, weather risk assessment, and smart port switching across all East Coast India procurement ports"
-              badge="Port Analytics"
-            />
-            <PortIntelligence defaultMonth={form.target_month} />
-          </>
-        )}
+        {tab === 'whatif'    && <WhatIfStudio     defaultForm={form} />}
+        {tab === 'portintel' && <PortIntelligence defaultMonth={form.target_month} />}
       </main>
     </div>
   )
@@ -85,9 +80,9 @@ export default function App() {
 
 function ErrorBanner({ msg }) {
   return (
-    <div style={{ background:'#fff0f0', border:'1px solid #f5a0a0', borderRadius:8, padding:'14px 18px',
-                  color:'#b71c1c', fontSize:13, marginBottom:16 }}>
-      ⚠ {msg}
+    <div style={{ background:'#fff0f0', border:'1px solid #f5a0a0', borderRadius:8,
+                  padding:'14px 18px', color:'#b71c1c', fontSize:13, marginBottom:16 }}>
+      {msg}
     </div>
   )
 }
@@ -95,9 +90,9 @@ function ErrorBanner({ msg }) {
 function LoadingCard() {
   return (
     <div className="card" style={{ padding:'60px 20px', textAlign:'center' }}>
-      <div style={{ width:44, height:44, border:'4px solid #dde3f4', borderTopColor:'#003087',
+      <div style={{ width:40, height:40, border:'4px solid #dde3f4', borderTopColor:'#003087',
                     borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 16px' }} />
-      <p style={{ color:'#6b7a9e', fontSize:14 }}>Running AI analysis across all engines…</p>
+      <p style={{ color:'#6b7a9e', fontSize:14, margin:0 }}>Running analysis across all AI engines…</p>
       <p style={{ color:'#b0bbd4', fontSize:12, marginTop:6 }}>Freight forecast · Vessel selection · Risk assessment</p>
     </div>
   )
@@ -105,27 +100,29 @@ function LoadingCard() {
 
 function WelcomeCard() {
   return (
-    <div className="card" style={{ padding:'56px 32px', textAlign:'center' }}>
-      {/* SAIL logo mark */}
-      <div style={{ width:64, height:64, background:'#003087', borderRadius:10,
-                    display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
-        <svg width="38" height="38" viewBox="0 0 38 38">
-          <polygon points="19,3 35,33 3,33" fill="#C8A84B" />
-          <polygon points="19,10 29,29 9,29"  fill="#003087" />
-          <circle cx="19" cy="22" r="4" fill="#C8A84B" />
+    <div className="card" style={{ padding:'48px 32px', textAlign:'center' }}>
+      <div style={{ width:56, height:56, background:'#003087', borderRadius:8,
+                    display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px' }}>
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="4" y="4" width="24" height="24" rx="1" fill="#C8A84B" transform="rotate(45 16 16)" />
+          <rect x="8" y="8" width="16" height="16" rx="1" fill="#003087" transform="rotate(45 16 16)" />
+          <polyline points="10,20 16,12 22,20" fill="none" stroke="white" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      <h3 style={{ fontSize:18, fontWeight:700, color:'#003087', marginBottom:8 }}>
+      <h3 style={{ fontSize:17, fontWeight:700, color:'#003087', marginBottom:8 }}>
         SAIL Freight Intelligence Platform
       </h3>
-      <p style={{ color:'#6b7a9e', fontSize:13, lineHeight:1.7, maxWidth:440, margin:'0 auto 20px' }}>
-        Enter your shipment parameters on the left and click <strong style={{color:'#003087'}}>Run Analysis</strong> to
-        receive AI-powered freight forecasts, vessel recommendations, port compatibility checks, and cost savings.
+      <p style={{ color:'#6b7a9e', fontSize:13, lineHeight:1.7, maxWidth:420, margin:'0 auto 20px' }}>
+        Enter shipment parameters on the left — or upload a CSV / Excel file — then click{' '}
+        <strong style={{ color:'#003087' }}>Run Analysis</strong> to receive AI-powered
+        freight forecasts, vessel recommendations, and cost savings.
       </p>
       <div style={{ display:'flex', flexWrap:'wrap', gap:8, justifyContent:'center' }}>
-        {['Freight Forecast','Market Signal','Vessel Optimizer','Port Check','Contract Advice','Risk Assessment','Savings Calculator'].map(f => (
-          <span key={f} style={{ background:'#eef1fb', border:'1px solid #dde3f4', color:'#6b7a9e',
-                                   fontSize:11, padding:'4px 10px', borderRadius:20 }}>
+        {['Freight Forecast','Market Signal','Vessel Optimizer',
+          'Port Compatibility','Contract Advice','Risk Assessment','Savings Calculator'].map(f => (
+          <span key={f} style={{ background:'#f0f3fb', border:'1px solid #dde3f4', color:'#6b7a9e',
+                                  fontSize:11, padding:'4px 10px', borderRadius:4 }}>
             {f}
           </span>
         ))}
