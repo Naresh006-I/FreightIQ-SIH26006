@@ -13,6 +13,12 @@ const MONTH_MAP = {
   Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12,
 }
 
+// Vessel draft lookup (meters) — matches datasets.py VESSELS list
+const VESSEL_DRAFTS = {
+  Handymax:11.5, Supramax:12.5, Ultramax:12.8,
+  Panamax:13.5, Kamsarmax:13.8, Capesize:18.2,
+}
+
 export default function ResultsPanel({ result }) {
   const {
     input_summary, freight_forecast, market_signal,
@@ -40,6 +46,11 @@ export default function ResultsPanel({ result }) {
           originId={input_summary.origin_id}
           destPortId={input_summary.port_id}
           month={MONTH_MAP[input_summary.period?.split(' ')[0]] || 11}
+          vesselData={{
+            ...vessel_recommendation,
+            cargo_mt: input_summary.quantity_mt,
+            draft_m:  VESSEL_DRAFTS[vessel_recommendation.vessel_type] || 13.8,
+          }}
         />
       </div>
 
