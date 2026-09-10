@@ -335,6 +335,7 @@ def port_intelligence(month: int = 11):
             "INPRD": 65, "INDMA": 60, "INSAG": 58,
             "INVTZ": 42, "INGVP": 40, "INGPL": 45, "INHAL": 38,
             "INCHP": 55,   # Chennai — Bay of Bengal cyclone exposure
+            "INKDL": 35,   # Kandla — Gulf of Kutch, moderate risk
         }
         weather_score = weather_risk_base.get(port_id, 40)
         if monsoon:

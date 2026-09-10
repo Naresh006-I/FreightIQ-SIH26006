@@ -77,6 +77,14 @@ PORTS: dict = {
         "commodities": ["thermal_coal", "coking_coal", "iron_ore", "limestone", "bauxite"],
         "lightering_required": False,
     },
+    "INKDL": {
+        "id": "INKDL", "name": "Kandla", "state": "Gujarat",
+        "lat": 23.003, "lon": 70.217,
+        "max_draft_m": 14.5, "loa_max_m": 275, "beam_max_m": 44,
+        "berths": 14, "annual_capacity_mt": 90_000_000,
+        "commodities": ["thermal_coal", "coking_coal", "iron_ore", "limestone", "bauxite", "manganese_ore"],
+        "lightering_required": False,
+    },
 }
 
 # ─── Dataset 5: Vessel Reference ─────────────────────────────────────────────
@@ -115,15 +123,50 @@ ROUTES: dict = {
     ("US", "INCHP"): {"distance_nm": 11_200,"sailing_days": 34, "chokepoints": ["Suez","Malacca"], "canal": "Suez"},
     ("MZ", "INCHP"): {"distance_nm": 4_900, "sailing_days": 15, "chokepoints": [],           "canal": None},
     ("RU", "INCHP"): {"distance_nm": 6_800, "sailing_days": 21, "chokepoints": ["Suez"],     "canal": "Suez"},
+    # ── Brazil (BR) routes ───────────────────────────────────────────────────
+    ("BR", "INPRD"): {"distance_nm": 10_800,"sailing_days": 33, "chokepoints": [],           "canal": None},
+    ("BR", "INVTZ"): {"distance_nm": 10_600,"sailing_days": 32, "chokepoints": [],           "canal": None},
+    ("BR", "INGVP"): {"distance_nm": 10_600,"sailing_days": 32, "chokepoints": [],           "canal": None},
+    ("BR", "INGPL"): {"distance_nm": 10_750,"sailing_days": 33, "chokepoints": [],           "canal": None},
+    ("BR", "INDMA"): {"distance_nm": 10_850,"sailing_days": 33, "chokepoints": [],           "canal": None},
+    ("BR", "INHAL"): {"distance_nm": 11_100,"sailing_days": 34, "chokepoints": [],           "canal": None},
+    ("BR", "INCHP"): {"distance_nm": 10_200,"sailing_days": 31, "chokepoints": [],           "canal": None},
+    ("BR", "INKDL"): {"distance_nm": 11_500,"sailing_days": 35, "chokepoints": [],           "canal": None},
+    # ── South Africa (ZA) routes ─────────────────────────────────────────────
+    ("ZA", "INPRD"): {"distance_nm": 5_200, "sailing_days": 16, "chokepoints": [],           "canal": None},
+    ("ZA", "INVTZ"): {"distance_nm": 5_000, "sailing_days": 15, "chokepoints": [],           "canal": None},
+    ("ZA", "INGVP"): {"distance_nm": 5_000, "sailing_days": 15, "chokepoints": [],           "canal": None},
+    ("ZA", "INGPL"): {"distance_nm": 5_100, "sailing_days": 16, "chokepoints": [],           "canal": None},
+    ("ZA", "INDMA"): {"distance_nm": 5_250, "sailing_days": 16, "chokepoints": [],           "canal": None},
+    ("ZA", "INHAL"): {"distance_nm": 5_500, "sailing_days": 17, "chokepoints": [],           "canal": None},
+    ("ZA", "INCHP"): {"distance_nm": 4_800, "sailing_days": 15, "chokepoints": [],           "canal": None},
+    ("ZA", "INKDL"): {"distance_nm": 5_800, "sailing_days": 18, "chokepoints": [],           "canal": None},
+    # ── Gabon (GA) routes ────────────────────────────────────────────────────
+    ("GA", "INPRD"): {"distance_nm": 8_600, "sailing_days": 26, "chokepoints": [],           "canal": None},
+    ("GA", "INVTZ"): {"distance_nm": 8_400, "sailing_days": 25, "chokepoints": [],           "canal": None},
+    ("GA", "INGVP"): {"distance_nm": 8_400, "sailing_days": 25, "chokepoints": [],           "canal": None},
+    ("GA", "INGPL"): {"distance_nm": 8_500, "sailing_days": 26, "chokepoints": [],           "canal": None},
+    ("GA", "INDMA"): {"distance_nm": 8_650, "sailing_days": 26, "chokepoints": [],           "canal": None},
+    ("GA", "INCHP"): {"distance_nm": 8_100, "sailing_days": 25, "chokepoints": [],           "canal": None},
+    ("GA", "INKDL"): {"distance_nm": 9_000, "sailing_days": 27, "chokepoints": [],           "canal": None},
+    # ── Kandla routes (all origins) ──────────────────────────────────────────
+    ("AU", "INKDL"): {"distance_nm": 5_500, "sailing_days": 17, "chokepoints": ["Malacca"], "canal": None},
+    ("ID", "INKDL"): {"distance_nm": 3_100, "sailing_days": 10, "chokepoints": ["Malacca"], "canal": None},
+    ("US", "INKDL"): {"distance_nm": 12_200,"sailing_days": 37, "chokepoints": ["Suez"],    "canal": "Suez"},
+    ("MZ", "INKDL"): {"distance_nm": 6_200, "sailing_days": 19, "chokepoints": [],           "canal": None},
+    ("RU", "INKDL"): {"distance_nm": 7_800, "sailing_days": 24, "chokepoints": ["Suez"],    "canal": "Suez"},
 }
 
 def get_route(origin_id: str, port_id: str) -> dict:
     key = (origin_id, port_id)
     if key in ROUTES:
         return ROUTES[key]
-    # fallback: estimate from known distances
-    fallback_nm = {"AU": 4800, "ID": 2200, "US": 11500, "MZ": 5600, "RU": 7200}
-    nm = fallback_nm.get(origin_id, 5000)
+    # fallback distances for new/unknown origins
+    fallback_nm = {
+        "AU": 4800, "ID": 2200, "US": 11500, "MZ": 5600, "RU": 7200,
+        "BR": 10800, "ZA": 5200, "GA": 8600,
+    }
+    nm = fallback_nm.get(origin_id, 6000)
     return {"distance_nm": nm, "sailing_days": round(nm / (13.5 * 24)), "chokepoints": [], "canal": None}
 
 
@@ -192,7 +235,7 @@ def get_seasonal_factor(target_month: int, target_year: int) -> dict:
 
 # ─── Dataset 4: Port Congestion ───────────────────────────────────────────────
 # Use a deterministic but port-specific seed so each port returns different values
-_PORT_SEEDS = {"INPRD": 11, "INVTZ": 22, "INGVP": 33, "INGPL": 44, "INDMA": 55, "INSAG": 66, "INHAL": 77, "INCHP": 88}
+_PORT_SEEDS = {"INPRD": 11, "INVTZ": 22, "INGVP": 33, "INGPL": 44, "INDMA": 55, "INSAG": 66, "INHAL": 77, "INCHP": 88, "INKDL": 99}
 
 def get_port_congestion(port_id: str, month: int) -> dict:
     """Port-specific congestion with unique random values per port."""
@@ -219,27 +262,31 @@ def get_port_congestion(port_id: str, month: int) -> dict:
 # ─── Dataset 1+2: Market Rates ───────────────────────────────────────────────
 # Base freight rates ($/MT) by origin — calibrated to real BCI/BPI averages
 BASE_FREIGHT: dict = {
-    "AU": {"INPRD": 11.2, "INVTZ": 10.8, "INGVP": 10.8, "INGPL": 11.5, "INDMA": 11.8, "INHAL": 13.2, "INCHP": 10.5},
-    "ID": {"INPRD":  7.1, "INVTZ":  6.8, "INGVP":  6.8, "INGPL":  7.3, "INDMA":  7.5, "INHAL":  8.4, "INCHP":  6.5},
-    "US": {"INPRD": 24.5, "INVTZ": 23.8, "INGVP": 23.8, "INGPL": 24.8, "INDMA": 25.2, "INHAL": 27.0, "INCHP": 23.2},
-    "MZ": {"INPRD": 13.5, "INVTZ": 13.0, "INGVP": 13.0, "INGPL": 13.8, "INDMA": 14.2, "INHAL": 15.5, "INCHP": 12.5},
-    "RU": {"INPRD": 16.8, "INVTZ": 16.2, "INGVP": 16.2, "INGPL": 17.0, "INDMA": 17.5, "INHAL": 19.0, "INCHP": 15.8},
+    "AU": {"INPRD": 11.2, "INVTZ": 10.8, "INGVP": 10.8, "INGPL": 11.5, "INDMA": 11.8, "INHAL": 13.2, "INCHP": 10.5, "INKDL": 12.5},
+    "ID": {"INPRD":  7.1, "INVTZ":  6.8, "INGVP":  6.8, "INGPL":  7.3, "INDMA":  7.5, "INHAL":  8.4, "INCHP":  6.5, "INKDL":  8.8},
+    "US": {"INPRD": 24.5, "INVTZ": 23.8, "INGVP": 23.8, "INGPL": 24.8, "INDMA": 25.2, "INHAL": 27.0, "INCHP": 23.2, "INKDL": 26.5},
+    "MZ": {"INPRD": 13.5, "INVTZ": 13.0, "INGVP": 13.0, "INGPL": 13.8, "INDMA": 14.2, "INHAL": 15.5, "INCHP": 12.5, "INKDL": 15.8},
+    "RU": {"INPRD": 16.8, "INVTZ": 16.2, "INGVP": 16.2, "INGPL": 17.0, "INDMA": 17.5, "INHAL": 19.0, "INCHP": 15.8, "INKDL": 18.5},
+    "BR": {"INPRD": 23.5, "INVTZ": 22.8, "INGVP": 22.8, "INGPL": 23.5, "INDMA": 24.0, "INHAL": 25.5, "INCHP": 22.0, "INKDL": 25.0},
+    "ZA": {"INPRD": 14.2, "INVTZ": 13.5, "INGVP": 13.5, "INGPL": 14.2, "INDMA": 14.8, "INHAL": 16.0, "INCHP": 13.0, "INKDL": 16.5},
+    "GA": {"INPRD": 19.5, "INVTZ": 18.8, "INGVP": 18.8, "INGPL": 19.5, "INDMA": 20.0, "INHAL": 21.5, "INCHP": 18.2, "INKDL": 21.0},
 }
 
 # Base FOB commodity prices ($/MT)
 BASE_FOB: dict = {
-    "thermal_coal": {"AU": 108, "ID": 95,  "US": 125, "MZ": 102, "RU": 92},
-    "coking_coal":  {"AU": 220, "ID": 198, "US": 235, "MZ": 210, "RU": 190},
-    "iron_ore":     {"AU": 105, "ID": 112, "US": 140, "MZ": 98,  "RU": 88},
-    "limestone":    {"AU": 20,  "ID": 18,  "US": 28,  "MZ": 22,  "RU": 16},
-    "bauxite":      {"AU": 45,  "ID": 42,  "US": 55,  "MZ": 40,  "RU": 38},
+    "thermal_coal":   {"AU": 108, "ID": 95,  "US": 125, "MZ": 102, "RU": 92,  "BR": 115, "ZA": 98,  "GA": 105},
+    "coking_coal":    {"AU": 220, "ID": 198, "US": 235, "MZ": 210, "RU": 190, "BR": 225, "ZA": 205, "GA": 215},
+    "iron_ore":       {"AU": 105, "ID": 112, "US": 140, "MZ": 98,  "RU": 88,  "BR": 110, "ZA": 95,  "GA": 100},
+    "limestone":      {"AU": 20,  "ID": 18,  "US": 28,  "MZ": 22,  "RU": 16,  "BR": 24,  "ZA": 21,  "GA": 22},
+    "bauxite":        {"AU": 45,  "ID": 42,  "US": 55,  "MZ": 40,  "RU": 38,  "BR": 48,  "ZA": 44,  "GA": 42},
+    "manganese_ore":  {"AU": 65,  "ID": 58,  "US": 78,  "MZ": 60,  "RU": 55,  "BR": 70,  "ZA": 62,  "GA": 68},
 }
 
-# Kcal per kg for energy commodities
 KCAL: dict = {
     "thermal_coal": 5500,
-    "coking_coal": 6800,
-    "iron_ore": None,
-    "limestone": None,
-    "bauxite": None,
+    "coking_coal":  6800,
+    "iron_ore":     None,
+    "limestone":    None,
+    "bauxite":      None,
+    "manganese_ore":None,
 }
