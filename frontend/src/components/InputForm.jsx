@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import * as XLSX from 'xlsx'
 
+// ── Form option data ──────────────────────────────────────────────────────────
 const COMMODITIES = [
-  { id:'thermal_coal', label:'Thermal Coal'   },
-  { id:'coking_coal',  label:'Coking Coal'    },
-  { id:'iron_ore',     label:'Iron Ore'        },
-  { id:'limestone',    label:'Limestone'       },
-  { id:'bauxite',      label:'Bauxite'         },
+  { id:'thermal_coal', label:'Thermal Coal' },
+  { id:'coking_coal',  label:'Coking Coal'  },
+  { id:'iron_ore',     label:'Iron Ore'     },
+  { id:'limestone',    label:'Limestone'    },
+  { id:'bauxite',      label:'Bauxite'      },
 ]
 const ORIGINS = [
   { id:'AU', label:'Australia',     sub:'Newcastle · Hay Point' },
@@ -15,13 +17,13 @@ const ORIGINS = [
   { id:'RU', label:'Russia',        sub:'Taman · Ust-Luga'      },
 ]
 const PORTS = [
-  { id:'INPRD', label:'Paradip',        state:'Odisha',         draft:17.0 },
-  { id:'INVTZ', label:'Visakhapatnam',  state:'Andhra Pradesh', draft:14.5 },
-  { id:'INGVP', label:'Gangavaram',     state:'Andhra Pradesh', draft:18.0 },
-  { id:'INGPL', label:'Gopalpur',       state:'Odisha',         draft:12.5 },
-  { id:'INDMA', label:'Dhamra',         state:'Odisha',         draft:16.5 },
-  { id:'INHAL', label:'Haldia',         state:'West Bengal',    draft:8.5  },
-  { id:'INCHP', label:'Chennai',        state:'Tamil Nadu',     draft:14.0 },
+  { id:'INPRD', label:'Paradip',       state:'Odisha',         draft:17.0 },
+  { id:'INVTZ', label:'Visakhapatnam', state:'Andhra Pradesh', draft:14.5 },
+  { id:'INGVP', label:'Gangavaram',    state:'Andhra Pradesh', draft:18.0 },
+  { id:'INGPL', label:'Gopalpur',      state:'Odisha',         draft:12.5 },
+  { id:'INDMA', label:'Dhamra',        state:'Odisha',         draft:16.5 },
+  { id:'INHAL', label:'Haldia',        state:'West Bengal',    draft:8.5  },
+  { id:'INCHP', label:'Chennai',       state:'Tamil Nadu',     draft:14.0 },
 ]
 const MONTHS = [
   {v:1,l:'January'},{v:2,l:'February'},{v:3,l:'March'},{v:4,l:'April'},
@@ -29,33 +31,18 @@ const MONTHS = [
   {v:9,l:'September'},{v:10,l:'October'},{v:11,l:'November'},{v:12,l:'December'},
 ]
 
-// Map CSV/Excel column names to form fields — handles exact Excel headers from SAIL template
-const CSV_FIELD_MAP = {
-  commodity:       ['commodity','commodity type','commodity_type','cargo_type','cargo type'],
-  quantity_mt:     ['quantity_mt','quantity','qty','metric_tonnes','quantity (metric tonnes)','quantity(metric tonnes)','quantity metric tonnes'],
-  origin_id:       ['origin_id','origin','origin_country','origin country'],
-  port_id:         ['port_id','destination_port','port','destination','destination port'],
-  target_month:    ['target_month','month','delivery_month','required delivery period','required delivery month'],
-  target_year:     ['target_year','year','delivery_year'],
-  contract_months: ['contract_months','contract_duration','contract','contract duration (months)','contract duration','contract(months)'],
-  // extra columns we can safely ignore
-  destination_state: ['destination_state','destination state','state'],
-  max_draft:         ['maximum draft (m)','max draft','maximum draft','draft'],
-}
-
+// ── Value alias maps ──────────────────────────────────────────────────────────
 const COMMODITY_ALIASES = {
   'coal':'thermal_coal','thermal coal':'thermal_coal','thermal_coal':'thermal_coal',
   'coking coal':'coking_coal','coking_coal':'coking_coal',
   'iron ore':'iron_ore','iron_ore':'iron_ore','iron':'iron_ore',
   'limestone':'limestone','bauxite':'bauxite',
 }
-
 const ORIGIN_ALIASES = {
   'australia':'AU','au':'AU','indonesia':'ID','id':'ID',
   'united states':'US','usa':'US','us':'US',
   'mozambique':'MZ','mz':'MZ','russia':'RU','ru':'RU',
 }
-
 const PORT_ALIASES = {
   'paradip':'INPRD','inprd':'INPRD',
   'visakhapatnam':'INVTZ','vizag':'INVTZ','invtz':'INVTZ',
@@ -65,97 +52,88 @@ const PORT_ALIASES = {
   'haldia':'INHAL','inhal':'INHAL',
   'chennai':'INCHP','inchp':'INCHP',
 }
-
-// Month name → number
-const MONTH_NAME_MAP = {
+const MONTH_MAP = {
   january:1,february:2,march:3,april:4,may:5,june:6,
   july:7,august:8,september:9,october:10,november:11,december:12,
   jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12,
 }
 
-function parseDeliveryPeriod(val) {
-  // Handles: "November 2026" | "Nov 2026" | "11" | "11/2026"
+// ── Delivery period parser ("November 2026" → {month:11, year:2026}) ──────────
+function parsePeriod(val) {
   if (!val) return {}
-  const s = val.trim()
+  const s = String(val).trim()
   // "November 2026" or "Nov 2026"
-  const mMatch = s.match(/^([A-Za-z]+)\s+(\d{4})$/)
-  if (mMatch) {
-    const mn = MONTH_NAME_MAP[mMatch[1].toLowerCase()]
-    const yr = Number(mMatch[2])
-    if (mn && yr) return { target_month: mn, target_year: yr }
+  const m1 = s.match(/^([A-Za-z]+)\s+(\d{4})$/)
+  if (m1) {
+    const mn = MONTH_MAP[m1[1].toLowerCase()]
+    if (mn) return { target_month:mn, target_year:Number(m1[2]) }
   }
-  // "2026-11" or "11/2026"
-  const numMatch = s.match(/^(\d{1,2})[\/\-](\d{4})$/)
-  if (numMatch) return { target_month: Number(numMatch[1]), target_year: Number(numMatch[2]) }
-  // pure number (month)
-  if (/^\d+$/.test(s)) return { target_month: Number(s) }
+  // "11/2026" or "2026-11"
+  const m2 = s.match(/^(\d{1,2})[\/\-](\d{4})$/)
+  if (m2) return { target_month:Number(m2[1]), target_year:Number(m2[2]) }
+  // plain number = month
+  if (/^\d+$/.test(s) && Number(s) <= 12) return { target_month:Number(s) }
   return {}
 }
 
-function parseCSVRow(headers, values) {
-  // Build case-insensitive row map
-  const row = {}
-  headers.forEach((h, i) => { row[h.trim().toLowerCase()] = (values[i] || '').trim() })
+// ── Row → form field mapper ───────────────────────────────────────────────────
+// Accepts an object where keys are already lowercase column names
+function mapRow(row) {
+  const get = (...keys) => {
+    for (const k of keys) {
+      if (row[k] !== undefined && row[k] !== '') return String(row[k]).trim()
+    }
+    return undefined
+  }
 
   const out = {}
 
-  // commodity
-  for (const alias of CSV_FIELD_MAP.commodity) {
-    if (row[alias] !== undefined) { out.commodity = row[alias]; break }
-  }
+  // Commodity
+  const comm = get('commodity','commodity type','commodity_type','cargo type','cargo_type')
+  if (comm) out.commodity = COMMODITY_ALIASES[comm.toLowerCase()] || comm.toLowerCase().replace(/\s+/g,'_')
 
-  // quantity
-  for (const alias of CSV_FIELD_MAP.quantity_mt) {
-    if (row[alias] !== undefined) { out.quantity_mt = row[alias]; break }
-  }
+  // Quantity
+  const qty = get('quantity (metric tonnes)','quantity_mt','quantity','qty','metric tonnes')
+  if (qty) out.quantity_mt = Number(String(qty).replace(/,/g,''))
 
-  // origin
-  for (const alias of CSV_FIELD_MAP.origin_id) {
-    if (row[alias] !== undefined) { out.origin_id = row[alias]; break }
-  }
+  // Origin
+  const orig = get('origin country','origin_country','origin_id','origin')
+  if (orig) out.origin_id = ORIGIN_ALIASES[orig.toLowerCase()] || orig.toUpperCase()
 
-  // port
-  for (const alias of CSV_FIELD_MAP.port_id) {
-    if (row[alias] !== undefined) { out.port_id = row[alias]; break }
-  }
+  // Destination port
+  const dest = get('destination port','destination_port','port_id','port','destination')
+  if (dest) out.port_id = PORT_ALIASES[dest.toLowerCase()] || dest.toUpperCase()
 
-  // delivery period — may contain "November 2026" as single field
-  for (const alias of CSV_FIELD_MAP.target_month) {
-    if (row[alias] !== undefined) {
-      const parsed = parseDeliveryPeriod(row[alias])
-      if (parsed.target_month) { out.target_month = parsed.target_month; out.target_year = parsed.target_year || 2026 }
-      else out.target_month = row[alias]
-      break
-    }
+  // Delivery period — may be "November 2026" in one cell OR month+year in two cells
+  const period = get('required delivery period','required delivery month','delivery_period')
+  if (period) {
+    const p = parsePeriod(period)
+    if (p.target_month) { out.target_month = p.target_month; out.target_year = p.target_year || 2026 }
   }
-  // year as separate column
-  for (const alias of CSV_FIELD_MAP.target_year) {
-    if (row[alias] !== undefined && !out.target_year) { out.target_year = row[alias]; break }
+  // Separate month/year columns
+  const mon = get('month','target_month','delivery_month')
+  if (mon && !out.target_month) {
+    const p = parsePeriod(mon)
+    if (p.target_month) out.target_month = p.target_month
+    else if (/^\d+$/.test(mon)) out.target_month = Number(mon)
   }
+  const yr = get('year','target_year','delivery_year')
+  if (yr && !out.target_year) out.target_year = Number(yr)
 
-  // contract months
-  for (const alias of CSV_FIELD_MAP.contract_months) {
-    if (row[alias] !== undefined) { out.contract_months = row[alias]; break }
-  }
-
-  // Normalise values
-  if (out.commodity)    out.commodity    = COMMODITY_ALIASES[out.commodity.toLowerCase()] || out.commodity.toLowerCase().replace(/\s+/g,'_')
-  if (out.origin_id)    out.origin_id    = ORIGIN_ALIASES[out.origin_id.toLowerCase()] || out.origin_id.toUpperCase()
-  if (out.port_id)      out.port_id      = PORT_ALIASES[out.port_id.toLowerCase()] || out.port_id.toUpperCase()
-  if (out.quantity_mt)  out.quantity_mt  = Number(String(out.quantity_mt).replace(/,/g,''))
-  if (out.target_month) out.target_month = Number(out.target_month)
-  if (out.target_year)  out.target_year  = Number(out.target_year)
-  if (out.contract_months) out.contract_months = Number(String(out.contract_months).replace(/[^0-9]/g,''))
+  // Contract duration — strip non-numeric (e.g. "6 Months" → 6)
+  const cont = get('contract duration (months)','contract duration','contract_months','contract_duration','contract')
+  if (cont) out.contract_months = Number(String(cont).replace(/[^0-9]/g,''))
 
   return out
 }
+
+// ── Styled helpers ────────────────────────────────────────────────────────────
 const L = ({ children }) => (
   <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#003087',
                   textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>
     {children}
   </label>
 )
-
 const S = ({ value, onChange, children }) => (
   <select value={value} onChange={e => onChange(e.target.value)}
     style={{ width:'100%', border:'1px solid #c4cde3', borderRadius:5, padding:'7px 10px',
@@ -164,105 +142,123 @@ const S = ({ value, onChange, children }) => (
   </select>
 )
 
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function InputForm({ form, onChange, onSubmit, loading }) {
-  const set       = (k, v) => onChange(p => ({ ...p, [k]: v }))
-  const fileRef   = useRef(null)
-  const [fileMsg, setFileMsg] = useState(null)
-  const [fileErr, setFileErr] = useState(null)
-  // Keep latest form + onSubmit in refs so the async file reader can access them
+  const set         = (k, v) => onChange(p => ({ ...p, [k]: v }))
+  const fileRef     = useRef(null)
   const formRef     = useRef(form)
   const onSubmitRef = useRef(onSubmit)
+  const [fileMsg,  setFileMsg]  = useState(null)
+  const [fileErr,  setFileErr]  = useState(null)
+  const [fileName, setFileName] = useState(null)
+
   useEffect(() => { formRef.current     = form     }, [form])
   useEffect(() => { onSubmitRef.current = onSubmit }, [onSubmit])
 
-  // ── CSV / Excel file parser ─────────────────────────────────────────────
+  // ── File upload handler ─────────────────────────────────────────────────────
   function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
-    setFileMsg(null); setFileErr(null)
+    setFileMsg(null); setFileErr(null); setFileName(file.name)
 
     const ext = file.name.split('.').pop().toLowerCase()
     if (!['csv','xlsx','xls'].includes(ext)) {
       setFileErr('This is not a valid dataset. Please upload a .csv or .xlsx file.')
-      return
+      e.target.value = ''; return
     }
 
     const reader = new FileReader()
+
     reader.onload = ev => {
       try {
-        const text = ev.target.result
+        // XLSX.read handles both binary .xlsx AND plain text .csv
+        const workbook  = XLSX.read(ev.target.result, { type:'array' })
+        const sheetName = workbook.SheetNames[0]
+        const sheet     = workbook.Sheets[sheetName]
 
-        // Split into lines, handle both comma and tab separators
-        const allLines = text.split(/\r?\n/)
-        const nonEmpty = allLines.map(l => l.trim()).filter(l => l)
+        // sheet_to_json with header:1 gives array of arrays (preserves row order)
+        // Use defval:'' so empty cells don't disappear
+        const raw = XLSX.utils.sheet_to_json(sheet, { header:1, defval:'' })
 
-        if (nonEmpty.length < 2) {
-          setFileErr('This is not a valid dataset. File must have a header row and at least one data row.')
+        if (!raw || raw.length < 2) {
+          setFileErr('This is not a valid dataset. File has no data rows.')
           return
         }
 
-        // Auto-detect separator: tab or comma
-        const detectSep = (line) => line.includes('\t') ? '\t' : ','
-
-        // Find the header row — scan until we find a row with recognisable column names
-        const knownHeaders = [
-          'commodity','commodity type','quantity','origin','destination',
-          'port','month','year','contract','draft'
-        ]
-        let headerIdx = 0
-        for (let i = 0; i < Math.min(nonEmpty.length - 1, 5); i++) {
-          const sep  = detectSep(nonEmpty[i])
-          const cols = nonEmpty[i].split(sep).map(c => c.trim().toLowerCase().replace(/['"]/g,''))
-          const hits = cols.filter(c => knownHeaders.some(k => c.includes(k)))
-          if (hits.length >= 2) { headerIdx = i; break }
+        // Find header row — scan first 6 rows
+        const KNOWN = ['commodity','quantity','origin','destination','port','delivery','contract','draft']
+        let hdrIdx = 0
+        for (let i = 0; i < Math.min(raw.length - 1, 6); i++) {
+          const row  = raw[i]
+          const hits = row.filter(c => KNOWN.some(k => String(c).toLowerCase().includes(k)))
+          if (hits.length >= 2) { hdrIdx = i; break }
         }
 
-        const sep     = detectSep(nonEmpty[headerIdx])
-        const headers = nonEmpty[headerIdx].split(sep).map(c => c.trim().replace(/['"]/g,''))
+        const headers = raw[hdrIdx].map(c => String(c).trim().toLowerCase())
 
-        // Find the first data row after the header (skip blank/separator lines)
-        let dataIdx = headerIdx + 1
-        while (dataIdx < nonEmpty.length) {
-          const cols = nonEmpty[dataIdx].split(sep).map(c => c.trim())
-          if (cols.some(c => c && c !== ',')) break
+        // Find first non-empty data row after header
+        let dataIdx = hdrIdx + 1
+        while (dataIdx < raw.length) {
+          if (raw[dataIdx].some(c => c !== '')) break
           dataIdx++
         }
-
-        if (dataIdx >= nonEmpty.length) {
+        if (dataIdx >= raw.length) {
           setFileErr('This is not a valid dataset. No data row found after header.')
           return
         }
 
-        const values = nonEmpty[dataIdx].split(sep).map(c => c.trim().replace(/['"]/g,''))
-        const parsed = parseCSVRow(headers, values)
+        const values = raw[dataIdx].map(c => String(c).trim())
 
-        if (Object.keys(parsed).length === 0) {
-          setFileErr('This is not a valid dataset. Could not recognise any column headers.')
+        // Build normalised row object  { lowercase_col_name: value }
+        const rowObj = {}
+        headers.forEach((h, i) => { rowObj[h] = values[i] || '' })
+
+        const parsed = mapRow(rowObj)
+
+        if (Object.keys(parsed).length < 3) {
+          setFileErr(
+            'This is not a valid dataset. Could not read required columns.\n' +
+            'Expected: Commodity Type, Quantity (Metric Tonnes), Origin Country, ' +
+            'Destination Port, Required Delivery Period, Contract Duration.'
+          )
           return
         }
 
+        // Update form + show success
         onChange(prev => ({ ...prev, ...parsed }))
-        const fieldCount = Object.keys(parsed).length
-        setFileMsg(`Loaded from ${file.name} — ${fieldCount} fields mapped. Running analysis…`)
 
-        // Auto-run analysis with merged form data
-        const mergedForm = { ...formRef.current, ...parsed }
-        // Small delay so React state settles before submission
-        setTimeout(() => { onSubmitRef.current?.(mergedForm) }, 120)
+        const parts = [
+          parsed.commodity?.replace(/_/g,' '),
+          parsed.quantity_mt ? `${Number(parsed.quantity_mt).toLocaleString()} MT` : null,
+          parsed.origin_id,
+          parsed.port_id,
+        ].filter(Boolean)
+        setFileMsg(`Loaded: ${parts.join(' · ')} — Running analysis…`)
+
+        // Auto-submit with merged data after React state update
+        const merged = { ...formRef.current, ...parsed }
+        setTimeout(() => onSubmitRef.current?.(merged), 150)
+
       } catch (err) {
-        setFileErr('This is not a valid dataset. ' + err.message)
+        setFileErr('Failed to read file: ' + err.message)
       }
     }
-    reader.readAsText(file)
+
+    reader.onerror = () => setFileErr('Could not read the file. Please try again.')
+    // readAsArrayBuffer works for ALL file types — binary xlsx AND plain csv
+    reader.readAsArrayBuffer(file)
     e.target.value = ''
   }
 
   return (
-    <form onSubmit={e => { e.preventDefault(); onSubmit(form) }} className="card" style={{ overflow:'hidden' }}>
+    <form onSubmit={e => { e.preventDefault(); onSubmit(form) }}
+          className="card" style={{ overflow:'hidden' }}>
 
-      {/* Header */}
+      {/* Form header */}
       <div style={{ background:'#003087', padding:'16px 20px' }}>
-        <div style={{ color:'white', fontWeight:700, fontSize:15, letterSpacing:'0.04em' }}>SHIPMENT ANALYSIS</div>
+        <div style={{ color:'white', fontWeight:700, fontSize:15, letterSpacing:'0.04em' }}>
+          SHIPMENT ANALYSIS
+        </div>
         <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11, marginTop:3 }}>
           Enter cargo details for AI-powered chartering insights
         </div>
@@ -271,32 +267,56 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
 
       <div style={{ padding:20, display:'flex', flexDirection:'column', gap:16, background:'#f8f9fd' }}>
 
-        {/* ── Upload Section ── */}
-        <div style={{ background:'white', border:'1px dashed #c4cde3', borderRadius:6, padding:14 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:'#003087', textTransform:'uppercase',
-                        letterSpacing:'0.08em', marginBottom:10 }}>
+        {/* ── Upload section ── */}
+        <div style={{ background:'white', border:'2px dashed #c4cde3', borderRadius:8, padding:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'#003087',
+                        textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>
             Import from File
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <button type="button" onClick={() => fileRef.current?.click()}
-              style={{ background:'#f0f3fb', border:'1px solid #c4cde3', borderRadius:5,
-                       padding:'7px 14px', fontSize:12, fontWeight:600, color:'#003087',
-                       cursor:'pointer', flexShrink:0 }}>
-              Choose File
-            </button>
-            <span style={{ fontSize:11, color:'#6b7a9e' }}>CSV or Excel (.xlsx)</span>
-            <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls"
-                   style={{ display:'none' }} onChange={handleFile} />
+
+          {/* Drop zone / button */}
+          <div
+            onClick={() => fileRef.current?.click()}
+            style={{ cursor:'pointer', background:'#f5f7fc', border:'1px solid #dde3f4',
+                     borderRadius:6, padding:'14px 12px', textAlign:'center',
+                     transition:'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background='#eef1fb'}
+            onMouseLeave={e => e.currentTarget.style.background='#f5f7fc'}
+          >
+            <div style={{ fontSize:22, marginBottom:6 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                   stroke="#003087" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <polyline points="9 15 12 12 15 15"/>
+              </svg>
+            </div>
+            <div style={{ fontSize:13, fontWeight:600, color:'#003087' }}>
+              {fileName ? fileName : 'Click to upload Excel or CSV'}
+            </div>
+            <div style={{ fontSize:11, color:'#6b7a9e', marginTop:3 }}>
+              .xlsx, .xls or .csv · Auto-runs analysis on upload
+            </div>
           </div>
+
+          <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls"
+                 style={{ display:'none' }} onChange={handleFile} />
+
+          {/* Success */}
           {fileMsg && (
-            <div style={{ marginTop:8, fontSize:11, color:'#1b5e20', background:'#e8f5e9',
-                          border:'1px solid #a5d6a7', borderRadius:4, padding:'5px 10px' }}>
+            <div style={{ marginTop:10, fontSize:12, color:'#1b5e20', background:'#e8f5e9',
+                          border:'1px solid #a5d6a7', borderRadius:6,
+                          padding:'8px 12px', lineHeight:1.5 }}>
               {fileMsg}
             </div>
           )}
+
+          {/* Error */}
           {fileErr && (
-            <div style={{ marginTop:8, fontSize:11, color:'#b71c1c', background:'#ffebee',
-                          border:'1px solid #ef9a9a', borderRadius:4, padding:'5px 10px' }}>
+            <div style={{ marginTop:10, fontSize:12, color:'#b71c1c', background:'#ffebee',
+                          border:'1px solid #ef9a9a', borderRadius:6,
+                          padding:'8px 12px', lineHeight:1.5, whiteSpace:'pre-line' }}>
               {fileErr}
             </div>
           )}
@@ -305,7 +325,9 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
         {/* Divider */}
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ flex:1, height:1, background:'#dde3f4' }} />
-          <span style={{ fontSize:10, fontWeight:700, color:'#6b7a9e', letterSpacing:'0.06em' }}>OR ENTER MANUALLY</span>
+          <span style={{ fontSize:10, fontWeight:700, color:'#6b7a9e', letterSpacing:'0.06em' }}>
+            OR ENTER MANUALLY
+          </span>
           <div style={{ flex:1, height:1, background:'#dde3f4' }} />
         </div>
 
@@ -324,7 +346,9 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
             onChange={e => set('quantity_mt', Number(e.target.value))}
             style={{ width:'100%', border:'1px solid #c4cde3', borderRadius:5, padding:'7px 10px',
                      fontSize:13, color:'#1a2340', background:'white', outline:'none' }} />
-          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>{form.quantity_mt.toLocaleString()} MT</div>
+          <div style={{ fontSize:11, color:'#6b7a9e', marginTop:4 }}>
+            {form.quantity_mt.toLocaleString()} MT
+          </div>
         </div>
 
         {/* Origin */}
@@ -343,7 +367,9 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
           <L>Destination Port</L>
           <S value={form.port_id} onChange={v => set('port_id', v)}>
             {PORTS.map(p => (
-              <option key={p.id} value={p.id}>{p.label} — {p.state} (Max Draft {p.draft}m)</option>
+              <option key={p.id} value={p.id}>
+                {p.label} — {p.state} (Max Draft {p.draft}m)
+              </option>
             ))}
           </S>
         </div>
@@ -376,14 +402,18 @@ export default function InputForm({ form, onChange, onSubmit, loading }) {
           <button type="submit" disabled={loading}
             style={{ width:'100%', background: loading ? '#9aafd4' : '#003087',
                      color:'white', fontWeight:700, fontSize:14, borderRadius:5,
-                     padding:'11px 0', border:'none', cursor: loading ? 'not-allowed' : 'pointer',
+                     padding:'11px 0', border:'none',
+                     cursor: loading ? 'not-allowed' : 'pointer',
                      display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-            {loading
-              ? <><span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.3)',
-                                  borderTopColor:'white', borderRadius:'50%',
-                                  animation:'spin 0.7s linear infinite', display:'inline-block' }} /> Analysing…</>
-              : 'Run Analysis'
-            }
+            {loading ? (
+              <>
+                <span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.3)',
+                                borderTopColor:'white', borderRadius:'50%',
+                                animation:'spin 0.7s linear infinite',
+                                display:'inline-block' }} />
+                Analysing…
+              </>
+            ) : 'Run Analysis'}
           </button>
         </div>
       </div>
