@@ -22,6 +22,7 @@ from app.data.datasets import (
     PORTS, BASE_FREIGHT, get_route, get_seasonal_factor,
     get_economic_indicators, ROUTES,
 )
+from app.db.database import save_voyage_disruption as _save_disruption
 
 router = APIRouter(prefix="/api/voyage-disruption", tags=["Voyage Disruption"])
 _RNG   = np.random.default_rng(63)
@@ -368,7 +369,7 @@ def analyse_voyage_disruptions(req: DisruptionRequest):
         "and perform preventive maintenance check at origin before departure."
     )
 
-    return {
+    result = {
         "voyage_summary": {
             "origin":         orig_names.get(req.origin_id, req.origin_id),
             "destination":    dest_name,
@@ -392,3 +393,9 @@ def analyse_voyage_disruptions(req: DisruptionRequest):
             "usd_inr_rate":     usd_inr,
         },
     }
+    # Auto-save to database
+    try:
+        _save_disruption(req.model_dump(), result)
+    except Exception:
+        pass
+    return result

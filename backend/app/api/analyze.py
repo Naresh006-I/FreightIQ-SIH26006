@@ -1,34 +1,32 @@
 """
 /api/analyze — Master MVP endpoint.
 Accepts one form POST, returns all 6 analysis outputs.
+Auto-saves every result to SQLite database.
 """
 from __future__ import annotations
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from app.services.analyze_engine import analyze
 from app.data.datasets import PORTS, VESSELS, BASE_FOB
+from app.db.database import save_analysis_result
 
 router = APIRouter(prefix="/api", tags=["Analyze"])
 
 
 class AnalyzeRequest(BaseModel):
-    commodity:       str   = Field(default="thermal_coal",
-                                   description="thermal_coal | coking_coal | iron_ore | limestone | bauxite")
-    quantity_mt:     float = Field(default=80_000, ge=10_000, le=500_000,
-                                   description="Cargo quantity in metric tonnes")
-    origin_id:       str   = Field(default="AU",
-                                   description="AU | ID | US | MZ | RU")
-    port_id:         str   = Field(default="INPRD",
-                                   description="INPRD | INVTZ | INGVP | INGPL | INDMA | INHAL")
+    commodity:       str   = Field(default="thermal_coal")
+    quantity_mt:     float = Field(default=80_000, ge=10_000, le=500_000)
+    origin_id:       str   = Field(default="AU")
+    port_id:         str   = Field(default="INPRD")
     target_month:    int   = Field(default=11, ge=1, le=12)
     target_year:     int   = Field(default=2026, ge=2025, le=2030)
-    contract_months: int   = Field(default=6, ge=1, le=24,
-                                   description="Desired contract duration in months")
+    contract_months: int   = Field(default=6, ge=1, le=24)
+    cargo_dataset_id: int  = Field(default=None)   # optional FK to cargo_datasets
 
 
 @router.post("/analyze")
 def run_analysis(req: AnalyzeRequest):
-    return analyze(
+    result = analyze(
         commodity=req.commodity,
         quantity_mt=req.quantity_mt,
         origin_id=req.origin_id,
@@ -37,18 +35,25 @@ def run_analysis(req: AnalyzeRequest):
         target_year=req.target_year,
         contract_months=req.contract_months,
     )
+    # Auto-save to database (non-blocking — ignore errors)
+    try:
+        db_id = save_analysis_result(req.model_dump(), result, req.cargo_dataset_id)
+        result["_db_id"] = db_id   # return DB id for reference
+    except Exception:
+        pass
+    return result
 
 
 @router.get("/analyze/defaults")
 def get_form_defaults():
-    """Return dropdown options for the frontend form."""
     return {
         "commodities": [
-            {"id": "thermal_coal", "label": "Thermal Coal"},
-            {"id": "coking_coal",  "label": "Coking Coal"},
-            {"id": "iron_ore",     "label": "Iron Ore"},
-            {"id": "limestone",    "label": "Limestone"},
-            {"id": "bauxite",      "label": "Bauxite"},
+            {"id": "thermal_coal",  "label": "Thermal Coal"},
+            {"id": "coking_coal",   "label": "Coking Coal"},
+            {"id": "iron_ore",      "label": "Iron Ore"},
+            {"id": "limestone",     "label": "Limestone"},
+            {"id": "bauxite",       "label": "Bauxite"},
+            {"id": "manganese_ore", "label": "Manganese Ore"},
         ],
         "origins": [
             {"id": "AU", "label": "Australia",     "ports": ["Newcastle", "Hay Point"]},
@@ -56,6 +61,9 @@ def get_form_defaults():
             {"id": "US", "label": "United States", "ports": ["Norfolk"]},
             {"id": "MZ", "label": "Mozambique",    "ports": ["Maputo", "Nacala"]},
             {"id": "RU", "label": "Russia",        "ports": ["Taman", "Ust-Luga"]},
+            {"id": "BR", "label": "Brazil",        "ports": ["Tubarao", "Itaguai"]},
+            {"id": "ZA", "label": "South Africa",  "ports": ["Richards Bay"]},
+            {"id": "GA", "label": "Gabon",         "ports": ["Owendo"]},
         ],
         "ports": [
             {"id": p["id"], "label": p["name"], "state": p["state"], "max_draft": p["max_draft_m"]}

@@ -38,3 +38,8 @@ npm-debug.log*
 
 # OS
 desktop.ini
+
+# SQLite database
+backend/data/*.db
+backend/data/*.db-wal
+backend/data/*.db-shm

@@ -6,6 +6,7 @@ import WhatIfStudio     from './components/WhatIfStudio'
 import PortIntelligence from './components/PortIntelligence'
 import VesselDashboard  from './pages/VesselDashboard'
 import PortDashboard    from './pages/PortDashboard'
+import AnalysisHistory  from './components/AnalysisHistory'
 import { apiFetch }     from './config'
 
 const DEFAULT_FORM = {
@@ -109,6 +110,8 @@ export default function App() {
                 />
               )}
               {!result && !loading && !error && <WelcomeCard />}
+              {/* Analysis History — always visible at bottom */}
+              <AnalysisHistory />
             </div>
           </div>
         )}
