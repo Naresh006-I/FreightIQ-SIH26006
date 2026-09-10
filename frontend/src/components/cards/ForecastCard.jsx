@@ -112,7 +112,7 @@ export default function ForecastCard({ data, input }) {
         <div style={{ display:'flex', borderBottom:'2px solid #eef1fa', marginBottom:12 }}>
           {[
             { id:'bdi',     label:'Baltic Dry Index (BDI)' },
-            { id:'freight', label:'Route Freight Forecast'  },
+            { id:'freight', label:'Freight Cost Optimisation'},
           ].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               style={{ padding:'6px 14px', fontSize:11, fontWeight:600, border:'none',

@@ -117,7 +117,7 @@ export default function VesselDashboard({ vesselData, originId, destPortId, vess
                             border:'3px solid white', marginRight:-10,
                             display:'flex', alignItems:'center', justifyContent:'center',
                             fontSize:8, fontWeight:800, color:'white', fontFamily:'Arial,sans-serif' }}>
-                V
+                
               </div>
             </div>
           </div>
